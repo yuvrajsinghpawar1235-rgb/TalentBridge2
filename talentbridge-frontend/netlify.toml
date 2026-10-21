@@ -1,6 +1,7 @@
 [build]
-publish = "dist" # or "build" depending on your setup
+base = "talentbridge-frontend"
 command = "npm run build"
+publish = "dist"
 
 [[redirects]]
 from = "/*"
