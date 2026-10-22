@@ -13,6 +13,9 @@ import NotFound from './components/NotFound';
 import { SkeletonCard, ErrorState } from './components/SharedUI';
 import { useToast } from './context/ToastContext';
 
+// Dynamic API Base URL (defaults to live Render backend in production)
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://talentbridge2-5.onrender.com";
+
 export default function App() {
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
   const [user, setUser] = useState(null);
@@ -63,7 +66,7 @@ export default function App() {
   const fetchJobs = () => {
     setIsLoadingJobs(true);
     setFetchError(null);
-    fetch('http://localhost:8080/api/jobs')
+    fetch(`${API_BASE_URL}/api/jobs`)
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
         return res.json();
@@ -74,7 +77,7 @@ export default function App() {
       })
       .catch((err) => {
         console.error('Error fetching jobs:', err);
-        setFetchError('Could not fetch jobs from backend at http://localhost:8080');
+        setFetchError(`Could not fetch jobs from backend at ${API_BASE_URL}`);
         setIsLoadingJobs(false);
       });
   };
