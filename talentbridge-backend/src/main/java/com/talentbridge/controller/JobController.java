@@ -9,7 +9,12 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/jobs")
-@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000", "https://talentbriddge2.netlify.app"})
+@CrossOrigin(origins = {
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "https://talentbriddge2.netlify.app",
+        "https://talentbridge-olive.vercel.app"
+})
 public class JobController {
 
     @Autowired
