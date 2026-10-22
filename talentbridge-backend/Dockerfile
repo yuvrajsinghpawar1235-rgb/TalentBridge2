@@ -1,12 +1,12 @@
-# Stage 1: Build the Application
+# Stage 1: Build the Java application using Maven with Java 21
 FROM maven:3.9.6-eclipse-temurin-21 AS build
 WORKDIR /app
 COPY pom.xml .
 COPY src ./src
 RUN mvn clean package -DskipTests
 
-# Stage 2: Create Lightweight Runtime Image
-FROM eclipse-temurin:21-jre
+# Stage 2: Run the built JAR file using a lightweight JRE 21 runtime
+FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
 EXPOSE 8080
