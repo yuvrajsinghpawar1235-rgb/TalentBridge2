@@ -11,7 +11,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/applications")
-@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000", "https://your-netlify-app.netlify.app"})
+@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000", "https://talentbriddge2.netlify.app"})
 public class ApplicationController {
 
     @Autowired
