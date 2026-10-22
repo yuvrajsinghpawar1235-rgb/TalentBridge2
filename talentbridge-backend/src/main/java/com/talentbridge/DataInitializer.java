@@ -37,7 +37,6 @@ public class DataInitializer implements CommandLineRunner {
 
             // 1. Users (Admin, Recruiter, Candidates)
             User admin = new User();
-            admin.setFullName("System Admin");
             admin.setName("System Admin");
             admin.setEmail("admin@talentbridge.com");
             admin.setPassword("admin123");
@@ -45,7 +44,6 @@ public class DataInitializer implements CommandLineRunner {
             userRepository.save(admin);
 
             User recruiter = new User();
-            recruiter.setFullName("Sarah Jenkins");
             recruiter.setName("Sarah Jenkins");
             recruiter.setEmail("recruiter@talentbridge.com");
             recruiter.setPassword("recruiter123");
@@ -53,7 +51,6 @@ public class DataInitializer implements CommandLineRunner {
             userRepository.save(recruiter);
 
             User candidate1 = new User();
-            candidate1.setFullName("Alex Turner");
             candidate1.setName("Alex Turner");
             candidate1.setEmail("candidate@talentbridge.com");
             candidate1.setPassword("candidate123");
@@ -61,7 +58,6 @@ public class DataInitializer implements CommandLineRunner {
             userRepository.save(candidate1);
 
             User candidate2 = new User();
-            candidate2.setFullName("Priya Sharma");
             candidate2.setName("Priya Sharma");
             candidate2.setEmail("priya.dev@gmail.com");
             candidate2.setPassword("candidate123");
@@ -160,7 +156,7 @@ public class DataInitializer implements CommandLineRunner {
             app3.setCandidateId(candidate1.getId());
             applicationRepository.save(app3);
 
-            System.out.println("seeded successfully!");
+            System.out.println("✅ Seeded successfully!");
         }
     }
 }
