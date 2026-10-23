@@ -36,6 +36,7 @@ public class SecurityConfig {
                 "http://localhost:5173",
                 "http://localhost:3000",
                 "https://talentbridge-olive.vercel.app",
+                "https://talentbridge2-seven.vercel.app",
                 "https://talentbriddge2.netlify.app"
         ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
