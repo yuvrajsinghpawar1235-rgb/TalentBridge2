@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://talentbridge2-5.onrender.com';
+
 export default function LoginModal({ isOpen, onClose, onLoginSuccess, initialRole = 'CANDIDATE', isGenericHeader = false }) {
   const [view, setView] = useState('LOGIN'); // 'LOGIN' | 'REGISTER' | 'FORGOT' | 'FORGOT_SUCCESS'
   const [role, setRole] = useState(initialRole);
@@ -59,8 +61,8 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, initialRol
     }
 
     const endpoint = view === 'REGISTER'
-      ? 'http://localhost:8080/api/auth/register'
-      : 'http://localhost:8080/api/auth/login';
+      ? `${API_BASE_URL}/api/auth/register`
+      : `${API_BASE_URL}/api/auth/login`;
 
     const payload = view === 'REGISTER'
       ? { ...formData, role }
@@ -171,7 +173,7 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, initialRol
                     </span>
                   )}
                 </div>
-                <input type="password" name="password" value={formData.password} onChange={handleChange} required style={inputStyle} placeholder="••••••••" />
+                <input type="password" name="password" value={formData.password} onChange={handleChange} required autoComplete="current-password" style={inputStyle} placeholder="••••••••" />
               </div>
 
               {view === 'REGISTER' && (

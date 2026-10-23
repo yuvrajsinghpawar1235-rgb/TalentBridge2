@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://talentbridge2-5.onrender.com';
+
 export default function PostJobModal({ isOpen, onClose, onJobPosted }) {
   const [formData, setFormData] = useState({
     title: '',
@@ -25,7 +27,7 @@ export default function PostJobModal({ isOpen, onClose, onJobPosted }) {
     setError('');
 
     try {
-      const response = await fetch('http://localhost:8080/api/jobs', {
+      const response = await fetch(`${API_BASE_URL}/api/jobs`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
