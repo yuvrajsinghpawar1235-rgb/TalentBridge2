@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://talentbridge2-5.onrender.com';
 
 export default function CandidateDashboard({ jobs, user, savedJobs, onToggleSaveJob }) {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -26,49 +28,31 @@ export default function CandidateDashboard({ jobs, user, savedJobs, onToggleSave
   });
   const [uploadMessage, setUploadMessage] = useState('');
 
-  // 3. APPLICATIONS STATE (Expanded stages up to OFFER and ACCEPTED)
-  const [applications, setApplications] = useState([
-    {
-      id: 101,
-      jobTitle: 'Full Stack Developer',
-      companyName: 'TechCorp Solutions',
-      stage: 'OFFER',
-      appliedDate: '2026-10-12',
-      salary: '$110k - $130k',
-      notes: 'Official employment offer extended! Review details and accept when ready.',
-      timeline: [
-        { date: '2026-10-12', event: 'Application Submitted' },
-        { date: '2026-10-14', event: 'Passed Initial Screening' },
-        { date: '2026-10-18', event: 'Final Interview Completed' },
-        { date: '2026-10-20', event: 'Job Offer Extended' }
-      ]
-    },
-    {
-      id: 102,
-      jobTitle: 'Java Backend Engineer',
-      companyName: 'FinFlow Global',
-      stage: 'INTERVIEW',
-      appliedDate: '2026-10-05',
-      salary: '$125k - $145k',
-      notes: 'System design interview scheduled. Check interview tab for your video call link.',
-      interviewTime: 'Friday at 2:30 PM EST',
-      timeline: [
-        { date: '2026-10-05', event: 'Application Submitted' },
-        { date: '2026-10-08', event: 'Recruiter Screening Completed' },
-        { date: '2026-10-10', event: 'Interview Scheduled' }
-      ]
-    }
-  ]);
-
+  // 3. APPLICATIONS STATE (Fetched dynamically from backend based on user ID)
+  const [applications, setApplications] = useState([]);
   const [selectedApp, setSelectedApp] = useState(null);
+
+  // Fetch candidate-specific applications on load / user change
+  useEffect(() => {
+    if (user && user.id) {
+      fetch(`${API_BASE_URL}/api/applications/candidate/${user.id}`)
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data)) {
+            // Map or normalize fields if needed
+            setApplications(data);
+          }
+        })
+        .catch(err => console.error("Failed to fetch user applications:", err));
+    }
+  }, [user]);
 
   // 4. INTERVIEWS STATE
   const [activeInterviewRoom, setActiveInterviewRoom] = useState(null);
 
   // 5. NOTIFICATIONS STATE
   const [notifications, setNotifications] = useState([
-    { id: 1, title: 'Job Offer Extended!', text: 'TechCorp Solutions has extended an official employment offer.', date: 'Just now', read: false },
-    { id: 2, title: 'Interview Stage Advanced', text: 'FinFlow Global moved your application to Interview Stage.', date: '2 hours ago', read: true }
+    { id: 1, title: 'Welcome to TalentBridge!', text: 'Your candidate account is fully active and ready.', date: 'Just now', read: false }
   ]);
 
   // Skill Handlers
@@ -105,8 +89,7 @@ export default function CandidateDashboard({ jobs, user, savedJobs, onToggleSave
         return {
           ...app,
           stage: 'ACCEPTED',
-          notes: 'Offer accepted successfully! Welcome aboard.',
-          timeline: [...app.timeline, { date: '2026-10-20', event: 'Offer Accepted by Candidate' }]
+          recruiterNotes: 'Offer accepted successfully! Welcome aboard.'
         };
       }
       return app;
@@ -115,8 +98,7 @@ export default function CandidateDashboard({ jobs, user, savedJobs, onToggleSave
       setSelectedApp(prev => ({
         ...prev,
         stage: 'ACCEPTED',
-        notes: 'Offer accepted successfully! Welcome aboard.',
-        timeline: [...prev.timeline, { date: '2026-10-20', event: 'Offer Accepted by Candidate' }]
+        recruiterNotes: 'Offer accepted successfully! Welcome aboard.'
       }));
     }
     alert('🎉 Congratulations! You have successfully accepted the job offer.');
@@ -173,7 +155,7 @@ export default function CandidateDashboard({ jobs, user, savedJobs, onToggleSave
         </div>
       )}
 
-      {/* 2. PROFILE TAB (Enhanced with Character & Design Polish) */}
+      {/* 2. PROFILE TAB */}
       {activeTab === 'profile' && (
         <div className="card" style={{ padding: '28px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
@@ -226,7 +208,6 @@ export default function CandidateDashboard({ jobs, user, savedJobs, onToggleSave
                 <textarea rows={3} value={profile.bio} onChange={(e) => setProfile({ ...profile, bio: e.target.value })} style={inputStyle} />
               </div>
 
-              {/* Skills Editor */}
               <div style={{ marginBottom: '15px' }}>
                 <label style={labelStyle}>Skills & Technologies</label>
                 <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
@@ -246,7 +227,6 @@ export default function CandidateDashboard({ jobs, user, savedJobs, onToggleSave
             </form>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              {/* Profile Header Card */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', backgroundColor: 'var(--bg-secondary)', padding: '20px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
                 <div>
                   <h4 style={{ margin: '0 0 4px 0', fontSize: '22px', color: 'var(--primary-accent)' }}>{profile.name}</h4>
@@ -260,7 +240,6 @@ export default function CandidateDashboard({ jobs, user, savedJobs, onToggleSave
                 </div>
               </div>
 
-              {/* Stat Pill Grid */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
                 <div style={subCardStyle}>
                   <strong style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>EDUCATION</strong>
@@ -276,19 +255,16 @@ export default function CandidateDashboard({ jobs, user, savedJobs, onToggleSave
                 </div>
               </div>
 
-              {/* Bio Summary Card */}
               <div style={{ ...subCardStyle, borderLeft: '4px solid var(--primary-accent)' }}>
                 <strong style={{ fontSize: '12px', color: 'var(--primary-accent)', display: 'block', marginBottom: '6px' }}>💡 Professional Bio Summary</strong>
                 <p style={{ margin: 0, fontSize: '14px', color: 'var(--text-primary)', lineHeight: '1.6' }}>{profile.bio}</p>
               </div>
 
-              {/* Projects / Experience Card */}
               <div style={{ ...subCardStyle, borderLeft: '4px solid var(--accent-green)' }}>
                 <strong style={{ fontSize: '12px', color: 'var(--accent-green)', display: 'block', marginBottom: '6px' }}>🚀 {profile.isFresher ? 'Key Projects & Academic Work' : 'Recent Work Experience'}</strong>
                 <p style={{ margin: 0, fontSize: '14px', color: 'var(--text-primary)', lineHeight: '1.5' }}>{profile.latestExperience}</p>
               </div>
 
-              {/* Technical Stack Tags */}
               <div>
                 <strong style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block', marginBottom: '10px' }}>CORE TECHNICAL STACK</strong>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
@@ -302,7 +278,7 @@ export default function CandidateDashboard({ jobs, user, savedJobs, onToggleSave
         </div>
       )}
 
-      {/* 3. RESUME TAB WITH WORKING FILE UPLOAD */}
+      {/* 3. RESUME TAB */}
       {activeTab === 'resume' && (
         <div className="card">
           <h3 style={{ margin: '0 0 12px 0', color: 'var(--text-primary)' }}>Resume Management</h3>
@@ -325,16 +301,9 @@ export default function CandidateDashboard({ jobs, user, savedJobs, onToggleSave
             <button className="btn-secondary" style={{ flex: 1 }} onClick={() => alert(`Downloading ${resumeFile.name}...`)}>
               📥 Download Resume
             </button>
-
-            {/* Real File Upload Input */}
             <label className="btn-primary" style={{ flex: 1, textAlign: 'center', cursor: 'pointer', display: 'inline-flex', justifyContent: 'center', alignItems: 'center' }}>
               📤 Upload New Resume
-              <input
-                type="file"
-                accept=".pdf,.doc,.docx"
-                onChange={handleResumeUpload}
-                style={{ display: 'none' }}
-              />
+              <input type="file" accept=".pdf,.doc,.docx" onChange={handleResumeUpload} style={{ display: 'none' }} />
             </label>
           </div>
         </div>
@@ -344,40 +313,45 @@ export default function CandidateDashboard({ jobs, user, savedJobs, onToggleSave
       {activeTab === 'applications' && (
         <div>
           <h3 style={{ marginBottom: '16px' }}>Application Tracking Pipeline</h3>
-          <div style={{ display: 'grid', gap: '14px' }}>
-            {applications.map((app) => (
-              <div key={app.id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <span style={stageBadgeStyle(app.stage)}>{app.stage.replace('_', ' ')}</span>
-                  <h4 style={{ margin: '6px 0 4px 0', fontSize: '18px', color: 'var(--text-primary)' }}>{app.jobTitle}</h4>
-                  <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)' }}>
-                    🏢 {app.companyName} • 💰 {app.salary} • Applied on {app.appliedDate}
-                  </p>
-                </div>
+          {applications.length === 0 ? (
+            <div className="card" style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>
+              No applications submitted yet. Browse jobs and apply to see your pipeline here!
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gap: '14px' }}>
+              {applications.map((app) => (
+                <div key={app.id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <span style={stageBadgeStyle(app.stage)}>{app.stage.replace('_', ' ')}</span>
+                    <h4 style={{ margin: '6px 0 4px 0', fontSize: '18px', color: 'var(--text-primary)' }}>Application #{app.id}</h4>
+                    <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)' }}>
+                      Job ID: {app.jobId} • Applied on {app.appliedAt ? new Date(app.appliedAt).toLocaleDateString() : 'Recent'}
+                    </p>
+                  </div>
 
-                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                  {app.stage === 'OFFER' && (
-                    <button className="btn-primary" onClick={() => handleAcceptOffer(app.id)} style={{ backgroundColor: 'var(--accent-green)', fontSize: '12px' }}>
-                      ✓ Accept Offer
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    {app.stage === 'OFFER' && (
+                      <button className="btn-primary" onClick={() => handleAcceptOffer(app.id)} style={{ backgroundColor: 'var(--accent-green)', fontSize: '12px' }}>
+                        ✓ Accept Offer
+                      </button>
+                    )}
+                    <button className="btn-secondary" onClick={() => setSelectedApp(app)} style={{ fontSize: '12px' }}>
+                      View Journey →
                     </button>
-                  )}
-                  <button className="btn-secondary" onClick={() => setSelectedApp(app)} style={{ fontSize: '12px' }}>
-                    View Application Journey →
-                  </button>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
 
-          {/* Descriptive Application Journey Modal */}
           {selectedApp && (
             <div style={overlayStyle}>
               <div style={{ ...modalStyle, width: '540px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px' }}>
                   <div>
                     <span style={stageBadgeStyle(selectedApp.stage)}>{selectedApp.stage.replace('_', ' ')}</span>
-                    <h3 style={{ margin: '6px 0 2px 0', color: 'var(--primary-accent)' }}>{selectedApp.jobTitle}</h3>
-                    <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '13px' }}>🏢 {selectedApp.companyName} • Applied on {selectedApp.appliedDate}</p>
+                    <h3 style={{ margin: '6px 0 2px 0', color: 'var(--primary-accent)' }}>Application #{selectedApp.id}</h3>
+                    <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '13px' }}>Candidate ID: {selectedApp.candidateId}</p>
                   </div>
                   <button onClick={() => setSelectedApp(null)} style={closeXStyle}>✕</button>
                 </div>
@@ -385,32 +359,9 @@ export default function CandidateDashboard({ jobs, user, savedJobs, onToggleSave
                 <hr style={{ borderColor: 'var(--border-color)', margin: '15px 0' }} />
 
                 <div style={{ marginBottom: '20px' }}>
-                  <h4 style={sectionHeaderStyle}>Application Progress Pipeline</h4>
-                  <div style={trackerBarStyle5}>
-                    <div style={trackerStepStyle(true)}>1. Applied</div>
-                    <div style={trackerStepStyle(selectedApp.stage !== 'IN_REVIEW')}>2. Screening</div>
-                    <div style={trackerStepStyle(['INTERVIEW', 'OFFER', 'ACCEPTED'].includes(selectedApp.stage))}>3. Interview</div>
-                    <div style={trackerStepStyle(['OFFER', 'ACCEPTED'].includes(selectedApp.stage))}>4. Offer</div>
-                    <div style={trackerStepStyle(selectedApp.stage === 'ACCEPTED')}>5. Accepted</div>
-                  </div>
-                </div>
-
-                <div style={{ marginBottom: '20px' }}>
                   <h4 style={sectionHeaderStyle}>Recruiter Feedback & Status</h4>
                   <div style={{ padding: '12px', backgroundColor: 'var(--bg-secondary)', borderRadius: '8px', borderLeft: '4px solid var(--primary-accent)', fontSize: '13px', lineHeight: '1.5' }}>
-                    {selectedApp.notes}
-                  </div>
-                </div>
-
-                <div style={{ marginBottom: '20px' }}>
-                  <h4 style={sectionHeaderStyle}>Activity History</h4>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {selectedApp.timeline.map((item, index) => (
-                      <div key={index} style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'flex', justifyContent: 'space-between' }}>
-                        <span>{item.event}</span>
-                        <strong>{item.date}</strong>
-                      </div>
-                    ))}
+                    {selectedApp.recruiterNotes || 'Your application is currently under review by the hiring team.'}
                   </div>
                 </div>
 
@@ -457,7 +408,7 @@ export default function CandidateDashboard({ jobs, user, savedJobs, onToggleSave
         </div>
       )}
 
-      {/* 6. INTERVIEWS (SIMPLIFIED "Join Meeting" BUTTON) */}
+      {/* 6. INTERVIEWS */}
       {activeTab === 'interviews' && (
         <div>
           <h3 style={{ marginBottom: '16px' }}>Upcoming Interview Schedule</h3>
@@ -474,10 +425,7 @@ export default function CandidateDashboard({ jobs, user, savedJobs, onToggleSave
                       <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.15)', padding: '3px 8px', borderRadius: '10px' }}>
                         📅 Interview Scheduled
                       </span>
-                      <h4 style={{ margin: '6px 0 4px 0', fontSize: '18px', color: 'var(--text-primary)' }}>{app.jobTitle} at {app.companyName}</h4>
-                      <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)' }}>
-                        ⏰ <strong>Scheduled Time:</strong> {app.interviewTime || 'Friday at 2:30 PM EST'}
-                      </p>
+                      <h4 style={{ margin: '6px 0 4px 0', fontSize: '18px', color: 'var(--text-primary)' }}>Application #{app.id} Interview</h4>
                     </div>
                     <button className="btn-primary" onClick={() => setActiveInterviewRoom(`TalentBridge-${app.id}`)}>
                       🎥 Join Meeting
@@ -505,7 +453,7 @@ export default function CandidateDashboard({ jobs, user, savedJobs, onToggleSave
         </div>
       )}
 
-      {/* 7. REAL-TIME RECRUITER NOTIFICATIONS */}
+      {/* 7. NOTIFICATIONS */}
       {activeTab === 'notifications' && (
         <div>
           <h3 style={{ marginBottom: '16px' }}>Application & Recruiter Updates</h3>
@@ -550,8 +498,6 @@ const stageBadgeStyle = (stage) => ({
 const overlayStyle = { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.65)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 };
 const modalStyle = { backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', padding: '24px', borderRadius: '14px', width: '420px', color: 'var(--text-primary)' };
 const sectionHeaderStyle = { fontSize: '14px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '8px' };
-const trackerBarStyle5 = { display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '4px', backgroundColor: 'var(--bg-secondary)', padding: '4px', borderRadius: '8px' };
-const trackerStepStyle = (active) => ({ textAlign: 'center', padding: '6px 2px', fontSize: '10px', fontWeight: 'bold', borderRadius: '6px', backgroundColor: active ? 'var(--primary-accent)' : 'transparent', color: active ? '#fff' : 'var(--text-secondary)' });
 const closeXStyle = { background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: '18px', cursor: 'pointer' };
 const avatarCircleStyle = { width: '48px', height: '48px', borderRadius: '50%', backgroundColor: 'var(--primary-accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: 'bold' };
 const subCardStyle = { backgroundColor: 'var(--bg-secondary)', padding: '14px', borderRadius: '10px', border: '1px solid var(--border-color)' };

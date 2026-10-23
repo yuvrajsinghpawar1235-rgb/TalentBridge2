@@ -1,44 +1,54 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://talentbridge2-5.onrender.com';
 
 export default function AdminDashboard({ jobs, onJobUpdated }) {
   const [activeTab, setActiveTab] = useState('overview');
 
-  // 1. USER MANAGEMENT STATE
+  // 1. DYNAMIC SYSTEM STATS & USERS STATE
+  const [analytics, setAnalytics] = useState({
+    totalUsers: 0,
+    totalJobs: jobs.length,
+    totalApplications: 0,
+    totalInterviews: 0
+  });
+
   const [users, setUsers] = useState([
     { id: 1, name: 'Alex Morgan', email: 'alex.morgan@example.com', role: 'CANDIDATE', status: 'ACTIVE', joinedDate: '2026-08-14' },
-    { id: 2, name: 'TechCorp Recruiter', email: 'recruiter@techcorp.com', role: 'RECRUITER', status: 'ACTIVE', joinedDate: '2026-09-01' },
-    { id: 3, name: 'Sarah Jenkins', email: 'sarah.j@example.com', role: 'CANDIDATE', status: 'SUSPENDED', joinedDate: '2026-09-12' },
-    { id: 4, name: 'FinFlow Hiring Team', email: 'hiring@finflow.com', role: 'RECRUITER', status: 'ACTIVE', joinedDate: '2026-10-02' }
+    { id: 2, name: 'TechCorp Recruiter', email: 'recruiter@techcorp.com', role: 'RECRUITER', status: 'ACTIVE', joinedDate: '2026-09-01' }
   ]);
 
-  // 2. COMPANY MANAGEMENT STATE
   const [companies, setCompanies] = useState([
     { id: 1, name: 'TechCorp Solutions', industry: 'Software & Cloud', verified: true, activeJobs: 4, location: 'San Francisco, CA' },
-    { id: 2, name: 'FinFlow Global', industry: 'FinTech Systems', verified: true, activeJobs: 2, location: 'New York, NY' },
-    { id: 3, name: 'InnovateAI Labs', industry: 'Artificial Intelligence', verified: false, activeJobs: 1, location: 'Austin, TX' }
+    { id: 2, name: 'FinFlow Global', industry: 'FinTech Systems', verified: true, activeJobs: 2, location: 'New York, NY' }
   ]);
 
-  // 3. JOB MODERATION STATE
   const [moderationJobs, setModerationJobs] = useState([
-    { id: 201, title: 'Unverified Crypto Engineer', companyName: 'Unknown Startup', status: 'PENDING_APPROVAL', postedDate: '2026-10-18', reason: 'Unverified employer profile' },
-    { id: 202, title: 'Data Entry Specialist', companyName: 'QuickGig Inc', status: 'FLAGGED', postedDate: '2026-10-19', reason: 'Flagged for suspicious salary range' }
+    { id: 201, title: 'Unverified Crypto Engineer', companyName: 'Unknown Startup', status: 'PENDING_APPROVAL', postedDate: '2026-10-18', reason: 'Unverified employer profile' }
   ]);
 
-  // 4. CATEGORIES MANAGEMENT STATE (With Removal)
   const [categories, setCategories] = useState([
     { id: 1, name: 'Software Development', jobCount: 42, status: 'ACTIVE' },
     { id: 2, name: 'Data Science & AI', jobCount: 18, status: 'ACTIVE' },
-    { id: 3, name: 'Product Management', jobCount: 12, status: 'ACTIVE' },
-    { id: 4, name: 'UI/UX Design', jobCount: 9, status: 'ACTIVE' }
+    { id: 3, name: 'Product Management', jobCount: 12, status: 'ACTIVE' }
   ]);
   const [newCategoryName, setNewCategoryName] = useState('');
 
-  // 5. SETTINGS & REPORTS STATE
   const [systemSettings, setSystemSettings] = useState({
     autoApproveVerified: true,
     maintenanceMode: false,
     emailAlerts: true
   });
+
+  // Fetch real analytics from backend on load
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/api/admin/analytics`)
+      .then(res => res.json())
+      .then(data => {
+        if (data) setAnalytics(data);
+      })
+      .catch(err => console.error("Failed to fetch admin analytics:", err));
+  }, []);
 
   // User Actions
   const toggleUserStatus = (userId) => {
@@ -101,16 +111,14 @@ export default function AdminDashboard({ jobs, onJobUpdated }) {
           <div style={metricsGridStyle}>
             <div className="card" style={{ borderTop: '4px solid var(--accent-purple)' }}>
               <span style={statLabelStyle}>Registered Users</span>
-              <h3 style={statValueStyle}>{users.length}</h3>
-              <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                {users.filter(u => u.role === 'CANDIDATE').length} Candidates • {users.filter(u => u.role === 'RECRUITER').length} Recruiters
-              </span>
+              <h3 style={statValueStyle}>{analytics.totalUsers || users.length}</h3>
+              <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Synced from Aiven MySQL DB</span>
             </div>
 
             <div className="card" style={{ borderTop: '4px solid var(--primary-accent)' }}>
               <span style={statLabelStyle}>Active Job Listings</span>
               <h3 style={{ ...statValueStyle, color: 'var(--primary-accent)' }}>{jobs.length}</h3>
-              <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Synced with MySQL database</span>
+              <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Live on Render Backend</span>
             </div>
 
             <div className="card" style={{ borderTop: '4px solid #f59e0b' }}>
@@ -237,7 +245,7 @@ export default function AdminDashboard({ jobs, onJobUpdated }) {
         </div>
       )}
 
-      {/* 5. CATEGORIES MANAGEMENT TAB (With Removal) */}
+      {/* 5. CATEGORIES MANAGEMENT TAB */}
       {activeTab === 'categories' && (
         <div className="card">
           <h3 style={{ margin: '0 0 16px 0', color: 'var(--text-primary)' }}>Job Industry Categories</h3>

@@ -15,7 +15,8 @@ import java.util.Optional;
         "http://localhost:5173",
         "http://localhost:3000",
         "https://talentbriddge2.netlify.app",
-        "https://talentbridge-olive.vercel.app"
+        "https://talentbridge-olive.vercel.app",
+        "https://talentbridge2-seven.vercel.app"
 })
 public class ApplicationController {
 
@@ -30,6 +31,11 @@ public class ApplicationController {
     @GetMapping("/job/{jobId}")
     public List<Application> getApplicationsByJob(@PathVariable Long jobId) {
         return applicationRepository.findByJobId(jobId);
+    }
+
+    @GetMapping("/candidate/{candidateId}")
+    public List<Application> getApplicationsByCandidate(@PathVariable Long candidateId) {
+        return applicationRepository.findByCandidateId(candidateId);
     }
 
     @PostMapping

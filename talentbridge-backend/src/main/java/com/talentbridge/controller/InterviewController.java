@@ -11,7 +11,13 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/interviews")
-@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000"})
+@CrossOrigin(origins = {
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "https://talentbriddge2.netlify.app",
+        "https://talentbridge-olive.vercel.app",
+        "https://talentbridge2-seven.vercel.app"
+})
 public class InterviewController {
 
     @Autowired

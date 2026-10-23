@@ -13,7 +13,8 @@ import java.util.List;
         "http://localhost:5173",
         "http://localhost:3000",
         "https://talentbriddge2.netlify.app",
-        "https://talentbridge-olive.vercel.app"
+        "https://talentbridge-olive.vercel.app",
+        "https://talentbridge2-seven.vercel.app"
 })
 public class JobController {
 

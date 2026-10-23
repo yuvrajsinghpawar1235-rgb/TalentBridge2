@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://talentbridge2-5.onrender.com';
 
 export default function LoginModal({ isOpen, onClose, onLoginSuccess, initialRole = 'CANDIDATE', isGenericHeader = false }) {
-  const [view, setView] = useState('LOGIN'); // 'LOGIN' | 'REGISTER' | 'FORGOT' | 'FORGOT_SUCCESS'
+  const [view, setView] = useState('LOGIN');
   const [role, setRole] = useState(initialRole);
   const [formData, setFormData] = useState({
     name: '',
@@ -38,7 +38,6 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, initialRol
 
   const theme = getRoleTheme();
 
-  // Instant Demo Switcher for fast testing
   const handleDemoLogin = (demoRole) => {
     const demoUsers = {
       CANDIDATE: { id: 10, name: 'Alex Morgan (Demo)', email: 'alex.demo@talentbridge.app', role: 'CANDIDATE' },
@@ -99,7 +98,6 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, initialRol
           <button onClick={onClose} style={closeXStyle}>✕</button>
         </div>
 
-        {/* FORGOT PASSWORD VIEW */}
         {view === 'FORGOT' && (
           <div>
             <h2 style={modalTitleStyle}>Reset Your Password</h2>
@@ -114,6 +112,7 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, initialRol
                   value={resetEmail}
                   onChange={(e) => setResetEmail(e.target.value)}
                   required
+                  autoComplete="email"
                   style={inputStyle}
                   placeholder="user@example.com"
                 />
@@ -128,7 +127,6 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, initialRol
           </div>
         )}
 
-        {/* FORGOT PASSWORD SUCCESS VIEW */}
         {view === 'FORGOT_SUCCESS' && (
           <div style={{ textAlign: 'center', padding: '10px 0' }}>
             <span style={{ fontSize: '32px' }}>📧</span>
@@ -142,7 +140,6 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, initialRol
           </div>
         )}
 
-        {/* LOGIN / REGISTER VIEWS */}
         {(view === 'LOGIN' || view === 'REGISTER') && (
           <div>
             <h2 style={modalTitleStyle}>
@@ -155,13 +152,13 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, initialRol
               {view === 'REGISTER' && (
                 <div style={inputGroupStyle}>
                   <label style={labelStyle}>Full Name</label>
-                  <input type="text" name="name" value={formData.name} onChange={handleChange} required style={inputStyle} placeholder="Jane Doe" />
+                  <input type="text" name="name" value={formData.name} onChange={handleChange} required autoComplete="name" style={inputStyle} placeholder="Jane Doe" />
                 </div>
               )}
 
               <div style={inputGroupStyle}>
                 <label style={labelStyle}>Email Address</label>
-                <input type="email" name="email" value={formData.email} onChange={handleChange} required style={inputStyle} placeholder="user@example.com" />
+                <input type="email" name="email" value={formData.email} onChange={handleChange} required autoComplete="username" style={inputStyle} placeholder="user@example.com" />
               </div>
 
               <div style={inputGroupStyle}>
@@ -192,7 +189,6 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, initialRol
               </button>
             </form>
 
-            {/* STYLISH DEMO ROLE FLOW */}
             <div style={{ marginTop: '18px', paddingTop: '15px', borderTop: '1px dashed var(--border-color)' }}>
               <div style={{ fontSize: '11px', fontWeight: '800', letterSpacing: '0.05em', color: 'var(--text-secondary)', textAlign: 'center', marginBottom: '10px', textTransform: 'uppercase' }}>
                 ✦ Instant Demo Access
@@ -247,7 +243,6 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, initialRol
   );
 }
 
-// Helpers
 const overlayStyle = { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.65)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 };
 const modalStyle = { backgroundColor: 'var(--bg-card, #ffffff)', padding: '26px', borderRadius: '14px', width: '390px', boxShadow: 'var(--card-shadow)', border: '1px solid var(--border-color)' };
 const modalTitleStyle = { margin: '0 0 15px 0', color: 'var(--text-primary)', fontSize: '20px', fontWeight: '800' };
