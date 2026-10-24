@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import RegisterCompanyModal from './RegisterCompanyModal';
 
 const BASE_COMPANIES = [
   {
@@ -23,15 +24,37 @@ const BASE_COMPANIES = [
   }
 ];
 
-export default function CompaniesView({ jobs = [], onSelectCompany }) {
+export default function CompaniesView({ jobs = [], onSelectCompany, user }) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [isRegisterOpen, setIsRegisterOpen] = useState(false);
 
-  // Dynamically extract all unique companies from active jobs
+  // Local storage persistence for custom registered companies
+  const [customCompanies, setCustomCompanies] = useState(() => {
+    try {
+      const stored = localStorage.getItem('registeredCompanies');
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const handleRegisterCompany = (newCompany) => {
+    const updated = [newCompany, ...customCompanies];
+    setCustomCompanies(updated);
+    localStorage.setItem('registeredCompanies', JSON.stringify(updated));
+  };
+
+  // Dynamically combine Base + Custom Registered Companies + Auto-discovered Job Companies
   const companiesList = useMemo(() => {
     const map = new Map();
 
+    // 1. Add base companies
     BASE_COMPANIES.forEach((c) => map.set(c.name.toLowerCase(), { ...c }));
 
+    // 2. Add recruiter registered custom companies
+    customCompanies.forEach((c) => map.set(c.name.toLowerCase(), { ...c }));
+
+    // 3. Auto-discover companies from published jobs
     jobs.forEach((job) => {
       const companyName = job.companyName || job.company || job.company_name;
       if (companyName) {
@@ -44,7 +67,7 @@ export default function CompaniesView({ jobs = [], onSelectCompany }) {
             location: job.location || 'Remote',
             size: 'Growing Enterprise',
             verified: true,
-            description: `Verified recruiting partner active on TalentBridge offering innovative tech opportunities.`,
+            description: `Active recruiting partner active on TalentBridge offering innovative tech opportunities.`,
             perks: ['Growth Stage', 'Competitive Compensation']
           });
         }
@@ -62,7 +85,7 @@ export default function CompaniesView({ jobs = [], onSelectCompany }) {
         activeJobsCount: activeCount
       };
     });
-  }, [jobs]);
+  }, [jobs, customCompanies]);
 
   const filteredCompanies = companiesList.filter((comp) => {
     if (!searchTerm) return true;
@@ -79,7 +102,17 @@ export default function CompaniesView({ jobs = [], onSelectCompany }) {
             Explore verified employers and discover active openings.
           </p>
         </div>
-        <span style={badgeStyle}>🏢 {companiesList.length} Partner Organizations</span>
+
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <button
+            className="btn-primary"
+            onClick={() => setIsRegisterOpen(true)}
+            style={{ backgroundColor: 'var(--primary-accent)', padding: '8px 16px', fontSize: '13px' }}
+          >
+            + Register New Company
+          </button>
+          <span style={badgeStyle}>🏢 {companiesList.length} Organizations</span>
+        </div>
       </div>
 
       <div className="card" style={{ padding: '16px', marginBottom: '20px' }}>
@@ -129,9 +162,15 @@ export default function CompaniesView({ jobs = [], onSelectCompany }) {
           </div>
         ))}
       </div>
+
+      <RegisterCompanyModal
+        isOpen={isRegisterOpen}
+        onClose={() => setIsRegisterOpen(false)}
+        onCompanyRegistered={handleRegisterCompany}
+      />
     </div>
   );
 }
 
-const bannerStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--bg-secondary)', padding: '24px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '20px' };
+const bannerStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--bg-secondary)', padding: '24px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '20px', flexWrap: 'wrap', gap: '15px' };
 const badgeStyle = { fontSize: '12px', fontWeight: 'bold', color: 'var(--primary-accent)', backgroundColor: 'var(--badge-bg)', padding: '6px 14px', borderRadius: '20px' };
