@@ -1,6 +1,6 @@
 package com.talentbridge.controller;
 
-import com.talentbridge.model.Job;
+import com.talentbridge.entity.Job;
 import com.talentbridge.repository.JobRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -73,13 +73,18 @@ public class JobController {
         if (jobData.isPresent()) {
             Job _job = jobData.get();
             if (job.getTitle() != null) _job.setTitle(job.getTitle());
-            if (job.getCompanyName() != null) _job.setCompanyName(job.getCompanyName());
+            if (job.getDescription() != null) _job.setDescription(job.getDescription());
             if (job.getLocation() != null) _job.setLocation(job.getLocation());
             if (job.getType() != null) _job.setType(job.getType());
             if (job.getWorkplaceType() != null) _job.setWorkplaceType(job.getWorkplaceType());
             if (job.getExperienceLevel() != null) _job.setExperienceLevel(job.getExperienceLevel());
+            if (job.getSalaryMin() != null) _job.setSalaryMin(job.getSalaryMin());
             if (job.getSalaryRange() != null) _job.setSalaryRange(job.getSalaryRange());
-            if (job.getDescription() != null) _job.setDescription(job.getDescription());
+            if (job.getCompanyName() != null) _job.setCompanyName(job.getCompanyName());
+            if (job.getCompanyDescription() != null) _job.setCompanyDescription(job.getCompanyDescription());
+            if (job.getRequirements() != null) _job.setRequirements(job.getRequirements());
+            if (job.getSkills() != null) _job.setSkills(job.getSkills());
+            if (job.getStatus() != null) _job.setStatus(job.getStatus());
 
             return new ResponseEntity<>(jobRepository.save(_job), HttpStatus.OK);
         } else {
