@@ -69,7 +69,7 @@ export default function App() {
   const [jobs, setJobs] = useState([]);
   const [isLoadingJobs, setIsLoadingJobs] = useState(true);
 
-  // 1. Persist Custom Recruiter Postings Locally to prevent 0-job wipeouts
+  // Persist Custom Recruiter Postings Locally to prevent 0-job wipeouts
   const [customJobs, setCustomJobs] = useState(() => {
     try {
       const stored = localStorage.getItem('customPostedJobs');
@@ -253,7 +253,7 @@ export default function App() {
             )}
             {user?.role === 'ADMIN' && (
               <span onClick={() => setActiveTab('admin')} style={{ ...navLinkStyle, color: activeTab === 'admin' ? 'var(--accent-purple)' : 'var(--text-secondary)' }}>
-                🛡️ Admin Workspace
+                🛡️ Master Admin Portal
               </span>
             )}
           </nav>
@@ -484,7 +484,6 @@ export default function App() {
         user={user}
         onClose={() => setIsPostJobOpen(false)}
         onJobPosted={(newJobPayload) => {
-          // Immediately save new recruiter post locally so it renders without delay
           const newJobWithId = {
             id: Date.now(),
             ...newJobPayload,

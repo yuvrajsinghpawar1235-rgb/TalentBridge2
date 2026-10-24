@@ -42,7 +42,7 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, initialRol
     const demoUsers = {
       CANDIDATE: { id: 10, name: 'Alex Morgan (Demo)', email: 'alex.demo@talentbridge.app', role: 'CANDIDATE' },
       RECRUITER: { id: 20, name: 'Sarah Recruiter (Demo)', email: 'sarah.recruiter@talentbridge.app', role: 'RECRUITER' },
-      ADMIN: { id: 30, name: 'Admin User (Demo)', email: 'admin@talentbridge.app', role: 'ADMIN' }
+      ADMIN: { id: 30, name: 'Master Admin (Demo)', email: 'admin@talentbridge.com', role: 'ADMIN' }
     };
     const user = demoUsers[demoRole];
     localStorage.setItem('user', JSON.stringify(user));
@@ -57,6 +57,15 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, initialRol
     if (view === 'FORGOT') {
       setView('FORGOT_SUCCESS');
       return;
+    }
+
+    // Strict Single Master Admin Check
+    if (role === 'ADMIN') {
+      const masterAdminEmail = 'admin@talentbridge.com';
+      if (formData.email.toLowerCase() !== masterAdminEmail) {
+        setError(`Access Denied: Only master administrator (${masterAdminEmail}) can access the admin workspace.`);
+        return;
+      }
     }
 
     const endpoint = view === 'REGISTER'
@@ -220,7 +229,7 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, initialRol
                   )}
                   {role === 'ADMIN' && (
                     <button type="button" onClick={() => handleDemoLogin('ADMIN')} style={stylishSingleDemoBtnStyle('var(--accent-purple)', 'rgba(168, 85, 247, 0.12)')}>
-                      🛡️ Launch Admin Demo →
+                      🛡️ Launch Master Admin Demo →
                     </button>
                   )}
                 </div>
