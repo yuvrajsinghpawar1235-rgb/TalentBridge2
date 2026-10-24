@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from 'react';
 
-// Default base companies
 const BASE_COMPANIES = [
   {
     id: 1,
@@ -9,7 +8,7 @@ const BASE_COMPANIES = [
     location: 'San Francisco, CA / Remote',
     size: '500 - 1,000 Employees',
     verified: true,
-    description: 'Empowering enterprises through distributed cloud architecture.',
+    description: 'Empowering enterprises through distributed cloud architecture and intelligent AI platforms.',
     perks: ['Remote-First', 'Flexible PTO', 'Equity']
   },
   {
@@ -19,23 +18,20 @@ const BASE_COMPANIES = [
     location: 'New York, NY',
     size: '1,000 - 5,000 Employees',
     verified: true,
-    description: 'High-performance microservices and secure banking transaction pipelines.',
+    description: 'Building microservices and secure transaction pipelines with Spring Boot and MySQL.',
     perks: ['Competitive Salary', '401(k) Matching']
   }
 ];
 
 export default function CompaniesView({ jobs = [], onSelectCompany }) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [industryFilter, setIndustryFilter] = useState('ALL');
 
-  // Extract all unique companies dynamically from published jobs
+  // Dynamically extract all unique companies from active jobs
   const companiesList = useMemo(() => {
     const map = new Map();
 
-    // 1. Add base companies
     BASE_COMPANIES.forEach((c) => map.set(c.name.toLowerCase(), { ...c }));
 
-    // 2. Discover new companies dynamically from posted jobs
     jobs.forEach((job) => {
       const companyName = job.companyName || job.company || job.company_name;
       if (companyName) {
@@ -44,18 +40,17 @@ export default function CompaniesView({ jobs = [], onSelectCompany }) {
           map.set(key, {
             id: Date.now() + Math.random(),
             name: companyName,
-            industry: 'Technology & Services',
+            industry: 'Technology & Cloud Solutions',
             location: job.location || 'Remote',
-            size: 'Growing Company',
+            size: 'Growing Enterprise',
             verified: true,
-            description: `Active recruiting partner offering high-impact roles.`,
-            perks: ['Growth Stage', 'Competitive Benefits']
+            description: `Verified recruiting partner active on TalentBridge offering innovative tech opportunities.`,
+            perks: ['Growth Stage', 'Competitive Compensation']
           });
         }
       }
     });
 
-    // 3. Attach accurate active job count
     return Array.from(map.values()).map((comp) => {
       const activeCount = jobs.filter((job) => {
         const jobComp = (job.companyName || job.company || job.company_name || '').toLowerCase();
@@ -69,20 +64,11 @@ export default function CompaniesView({ jobs = [], onSelectCompany }) {
     });
   }, [jobs]);
 
-  const filteredCompanies = useMemo(() => {
-    return companiesList.filter((comp) => {
-      const matchesSearch =
-        !searchTerm ||
-        comp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        comp.industry.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        comp.location.toLowerCase().includes(searchTerm.toLowerCase());
-
-      const matchesIndustry =
-        industryFilter === 'ALL' || comp.industry.toLowerCase().includes(industryFilter.toLowerCase());
-
-      return matchesSearch && matchesIndustry;
-    });
-  }, [companiesList, searchTerm, industryFilter]);
+  const filteredCompanies = companiesList.filter((comp) => {
+    if (!searchTerm) return true;
+    const term = searchTerm.toLowerCase();
+    return comp.name.toLowerCase().includes(term) || comp.industry.toLowerCase().includes(term);
+  });
 
   return (
     <div style={{ marginTop: '20px' }}>
@@ -90,19 +76,19 @@ export default function CompaniesView({ jobs = [], onSelectCompany }) {
         <div>
           <h2 style={{ margin: '0 0 6px 0', fontSize: '24px', color: 'var(--text-primary)' }}>Partner Companies Directory</h2>
           <p style={{ margin: 0, fontSize: '14px', color: 'var(--text-secondary)' }}>
-            Explore verified employers and discover open positions.
+            Explore verified employers and discover active openings.
           </p>
         </div>
         <span style={badgeStyle}>🏢 {companiesList.length} Partner Organizations</span>
       </div>
 
-      <div className="card" style={{ padding: '16px', marginBottom: '20px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+      <div className="card" style={{ padding: '16px', marginBottom: '20px' }}>
         <input
           type="text"
-          placeholder="🔍 Search companies by name, industry, or location..."
+          placeholder="🔍 Search companies by name or industry..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          style={{ flex: 1, minWidth: '240px', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)', outline: 'none' }}
+          style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)', outline: 'none' }}
         />
       </div>
 
@@ -111,10 +97,7 @@ export default function CompaniesView({ jobs = [], onSelectCompany }) {
           <div key={comp.id} className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', borderTop: '4px solid var(--primary-accent)' }}>
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
-                <div>
-                  <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', color: 'var(--primary-accent)' }}>{comp.name}</h3>
-                  <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '600' }}>{comp.industry}</span>
-                </div>
+                <h3 style={{ margin: 0, fontSize: '18px', color: 'var(--primary-accent)' }}>{comp.name}</h3>
                 {comp.verified && (
                   <span style={{ fontSize: '10px', backgroundColor: 'rgba(16, 185, 129, 0.15)', color: 'var(--accent-green)', fontWeight: 'bold', padding: '3px 8px', borderRadius: '10px' }}>
                     ✓ Verified
@@ -150,5 +133,5 @@ export default function CompaniesView({ jobs = [], onSelectCompany }) {
   );
 }
 
-const bannerStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--bg-secondary)', padding: '24px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '20px', flexWrap: 'wrap', gap: '15px' };
+const bannerStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--bg-secondary)', padding: '24px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '20px' };
 const badgeStyle = { fontSize: '12px', fontWeight: 'bold', color: 'var(--primary-accent)', backgroundColor: 'var(--badge-bg)', padding: '6px 14px', borderRadius: '20px' };

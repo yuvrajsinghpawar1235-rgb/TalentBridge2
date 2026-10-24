@@ -10,68 +10,44 @@ import AdminDashboard from './components/AdminDashboard';
 import HeaderProfileMenu from './components/HeaderProfileMenu';
 import ConfirmModal from './components/ConfirmModal';
 import NotFound from './components/NotFound';
-import { SkeletonCard, ErrorState } from './components/SharedUI';
+import { SkeletonCard } from './components/SharedUI';
 import { useToast } from './context/ToastContext';
 
-// Dynamic API Base URL (defaults to live Render backend in production)
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://talentbridge2-5.onrender.com";
 
-// Fallback demo jobs so demo accounts never show empty lists
 const MOCK_DEMO_JOBS = [
   {
     id: 1,
-    title: 'Full Stack Software Engineer',
+    title: 'Full Stack Java Developer',
     companyName: 'TechCorp Solutions',
-    location: 'San Francisco, CA',
-    type: 'Full-Time',
+    location: 'Remote',
+    type: 'Full-time',
     workplaceType: 'Remote',
-    experienceLevel: 'Entry',
-    salaryRange: '$110,000 - $125,000',
-    description: 'Empowering enterprises through distributed cloud architecture and intelligent AI platforms using React and Spring Boot.'
+    experienceLevel: 'Mid',
+    salaryRange: '$120,000 - $145,000',
+    description: 'Looking for a strong developer proficient in Spring Boot, React, and MySQL to build scalable enterprise modules.'
   },
   {
     id: 2,
-    title: 'Senior Frontend Architect',
+    title: 'React Frontend Architect',
     companyName: 'TechCorp Solutions',
-    location: 'New York, NY',
-    type: 'Full-Time',
-    workplaceType: 'Hybrid',
-    experienceLevel: 'Senior',
-    salaryRange: '$140,000 - $165,000',
-    description: 'Lead frontend architecture, performance optimization, and scalable design systems.'
-  },
-  {
-    id: 3,
-    title: 'Java Backend Developer',
-    companyName: 'FinFlow Global',
-    location: 'Chicago, IL',
-    type: 'Full-Time',
-    workplaceType: 'On-site',
-    experienceLevel: 'Mid',
-    salaryRange: '$120,000 - $135,000',
-    description: 'Build high-performance microservices and secure banking transaction pipelines with Spring Boot and MySQL.'
-  },
-  {
-    id: 4,
-    title: 'AI / Machine Learning Engineer',
-    companyName: 'Neural Systems AI',
-    location: 'Austin, TX',
-    type: 'Full-Time',
-    workplaceType: 'Remote',
-    experienceLevel: 'Mid',
-    salaryRange: '$130,000 - $150,000',
-    description: 'Develop deep learning pipelines, computer vision models, and LLM integration tools using Python and PyTorch.'
-  },
-  {
-    id: 5,
-    title: 'DevOps & Cloud Engineer',
-    companyName: 'CloudScale Inc.',
-    location: 'Seattle, WA',
+    location: 'Remote',
     type: 'Contract',
     workplaceType: 'Remote',
     experienceLevel: 'Senior',
-    salaryRange: '$135,000 - $155,000',
-    description: 'Manage AWS infrastructure, Kubernetes clusters, and automated CI/CD deployment pipelines.'
+    salaryRange: '$110,000 - $130,000',
+    description: 'Lead frontend development using modern React, state management, and Tailwind CSS component systems.'
+  },
+  {
+    id: 3,
+    title: 'Backend Engineer',
+    companyName: 'FinFlow Global',
+    location: 'New York, NY',
+    type: 'Full-time',
+    workplaceType: 'Hybrid',
+    experienceLevel: 'Mid',
+    salaryRange: '$130,000 - $150,000',
+    description: 'Build robust financial microservices using Spring Boot and high-throughput MySQL pipelines.'
   }
 ];
 
@@ -84,18 +60,36 @@ export default function App() {
   const [isPostJobOpen, setIsPostJobOpen] = useState(false);
   const [selectedJob, setSelectedJob] = useState(null);
 
-  // Dedicated Company Filter State
+  // Filter & Search State
   const [selectedCompanyFilter, setSelectedCompanyFilter] = useState(null);
+  const [activeTab, setActiveTab] = useState('landing');
+  const [searchTerm, setSearchTerm] = useState('');
 
-  // Data, Loading, & Error States
+  // Data Loading States
   const [jobs, setJobs] = useState([]);
   const [isLoadingJobs, setIsLoadingJobs] = useState(true);
-  const [fetchError, setFetchError] = useState(null);
 
-  // Use backend jobs if available and non-empty, otherwise fallback to mock demo jobs
-  const activeJobs = Array.isArray(jobs) && jobs.length > 0 ? jobs : MOCK_DEMO_JOBS;
+  // 1. Persist Custom Recruiter Postings Locally to prevent 0-job wipeouts
+  const [customJobs, setCustomJobs] = useState(() => {
+    try {
+      const stored = localStorage.getItem('customPostedJobs');
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
 
-  // Persist Saved Jobs in Local Storage
+  useEffect(() => {
+    localStorage.setItem('customPostedJobs', JSON.stringify(customJobs));
+  }, [customJobs]);
+
+  // Combined Active Jobs List
+  const activeJobs = [
+    ...customJobs,
+    ...(Array.isArray(jobs) && jobs.length > 0 ? jobs : MOCK_DEMO_JOBS)
+  ];
+
+  // Saved Bookmarks Persistence
   const [savedJobs, setSavedJobs] = useState(() => {
     try {
       const stored = localStorage.getItem('savedJobs');
@@ -105,10 +99,6 @@ export default function App() {
     }
   });
 
-  const [activeTab, setActiveTab] = useState('landing');
-  const [searchTerm, setSearchTerm] = useState('');
-
-  // Confirmation Modal State
   const [confirmConfig, setConfirmConfig] = useState({
     isOpen: false,
     title: '',
@@ -125,7 +115,6 @@ export default function App() {
     localStorage.setItem('theme', theme);
   }, [theme]);
 
-  // Sync savedJobs with localStorage
   useEffect(() => {
     localStorage.setItem('savedJobs', JSON.stringify(savedJobs));
   }, [savedJobs]);
@@ -144,7 +133,6 @@ export default function App() {
 
   const fetchJobs = () => {
     setIsLoadingJobs(true);
-    setFetchError(null);
     fetch(`${API_BASE_URL}/api/jobs`)
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
@@ -157,7 +145,7 @@ export default function App() {
         setIsLoadingJobs(false);
       })
       .catch((err) => {
-        console.error('Error fetching jobs, using fallback mock data:', err);
+        console.warn('Backend fetch fallback active:', err);
         setIsLoadingJobs(false);
       });
   };
@@ -174,7 +162,7 @@ export default function App() {
     setConfirmConfig({
       isOpen: true,
       title: 'Sign Out Confirmation',
-      message: 'Are you sure you want to sign out of your session?',
+      message: 'Are you sure you want to sign out?',
       confirmText: 'Sign Out',
       confirmColor: '#ef4444',
       onConfirm: () => {
@@ -186,7 +174,6 @@ export default function App() {
     });
   };
 
-  // Structured Company Selection Handler
   const handleSelectCompanyJobs = (companyName) => {
     setSelectedCompanyFilter(companyName);
     setSearchTerm('');
@@ -195,7 +182,7 @@ export default function App() {
 
   const handleToggleSaveJob = (jobToSave) => {
     if (!user) {
-      addToast('Please sign in or register to bookmark job opportunities!', 'info');
+      addToast('Please sign in to bookmark job opportunities!', 'info');
       openAuthForRole('CANDIDATE', true);
       return;
     }
@@ -212,77 +199,25 @@ export default function App() {
     });
   };
 
-  // Submit Application Handler
-  const handleApplyJob = async (job) => {
-    if (!user) {
-      addToast('Please sign in or register to submit job applications!', 'info');
-      openAuthForRole('CANDIDATE', true);
-      return;
-    }
+  // Bulletproof Multi-Field Job Filter
+  const filteredJobs = activeJobs.filter((job) => {
+    const jobCompany = (job.companyName || job.company || job.company_name || '').toLowerCase();
 
-    const applicationPayload = {
-      jobId: job.id,
-      candidateId: user.id,
-      candidateName: user.name || user.email,
-      candidateEmail: user.email,
-      stage: 'APPLIED',
-      recruiterNotes: 'Application submitted successfully.'
-    };
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/applications`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(applicationPayload)
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to submit application');
-      }
-
-      addToast(`🎉 Application submitted for "${job.title}"!`, 'success');
-      if (selectedJob) setSelectedJob(null);
-    } catch (err) {
-      addToast(`Could not apply: ${err.message}`, 'error');
-    }
-  };
-
-  // Bulletproof Filter Logic that handles missing backend company properties
-  const filteredJobs = activeJobs.filter((job, index) => {
-    // 1. Resolve Company Name dynamically across all possible backend property keys
-    let jobCompany = job.companyName || job.company || job.company_name || '';
-
-    // 2. If the backend object lacks a company name entirely, assign it based on fallback map
-    if (!jobCompany) {
-      const fallbackCompanies = [
-        'TechCorp Solutions',
-        'TechCorp Solutions',
-        'FinFlow Global',
-        'Neural Systems AI',
-        'CloudScale Inc.'
-      ];
-      jobCompany = fallbackCompanies[index % fallbackCompanies.length];
-    }
-
-    const companyLower = jobCompany.toLowerCase();
-
-    // 3. If a specific company filter is active, strictly check company name
     if (selectedCompanyFilter) {
-      return companyLower.includes(selectedCompanyFilter.toLowerCase());
+      return jobCompany.includes(selectedCompanyFilter.toLowerCase());
     }
 
-    // 4. Otherwise apply standard multi-field text search
     if (!searchTerm) return true;
     const term = searchTerm.toLowerCase();
     const title = (job.title || '').toLowerCase();
     const location = (job.location || '').toLowerCase();
 
-    return title.includes(term) || location.includes(term) || companyLower.includes(term);
+    return title.includes(term) || location.includes(term) || jobCompany.includes(term);
   });
 
   return (
     <div className="container" style={{ paddingBottom: '60px' }}>
-      {/* Navigation Header */}
+      {/* Header Bar */}
       <header style={headerStyle}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
           <h1
@@ -318,7 +253,7 @@ export default function App() {
             )}
             {user?.role === 'ADMIN' && (
               <span onClick={() => setActiveTab('admin')} style={{ ...navLinkStyle, color: activeTab === 'admin' ? 'var(--accent-purple)' : 'var(--text-secondary)' }}>
-                🛡️ Admin Moderation
+                🛡️ Admin Workspace
               </span>
             )}
           </nav>
@@ -356,24 +291,22 @@ export default function App() {
               Hire faster. Scale smarter with <span className="gradient-text">dedicated workspaces</span>.
             </h2>
             <p style={{ color: 'var(--text-secondary)', maxWidth: '640px', margin: '0 auto 28px auto', fontSize: '16px', lineHeight: '1.6' }}>
-              TalentBridge provides exclusive sign-in portals for Candidates, Recruiters, and Administrators.
+              Exclusive portals for Job Seekers, Employers, and Platform Administration.
             </p>
           </section>
 
           <section style={{ marginTop: '10px' }}>
-            <h3 style={{ fontSize: '18px', marginBottom: '20px', textAlign: 'center' }}>Choose Your Role Workspace</h3>
-
             <div style={roleGridStyle}>
               <div className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', borderTop: '4px solid var(--primary-accent)' }}>
                 <div>
                   <div style={roleBadgeStyle('var(--primary-accent)', 'var(--badge-bg)')}>Job Seeker</div>
-                  <h4 style={{ fontSize: '20px', margin: '12px 0 8px 0', color: 'var(--text-primary)' }}>👤 Candidate Sign In</h4>
+                  <h4 style={{ fontSize: '20px', margin: '12px 0 8px 0', color: 'var(--text-primary)' }}>👤 Candidate Portal</h4>
                   <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: '1.5' }}>
-                    Discover top tech jobs, manage applications, save jobs, and track interview stages.
+                    Discover tech positions, manage saved bookmarks, and track application stages.
                   </p>
                 </div>
                 <button className="btn-primary" style={{ width: '100%', marginTop: '20px' }} onClick={() => openAuthForRole('CANDIDATE', false)}>
-                  Candidate Portal
+                  Candidate Sign In
                 </button>
               </div>
 
@@ -382,24 +315,24 @@ export default function App() {
                   <div style={roleBadgeStyle('var(--accent-green)', 'rgba(16, 185, 129, 0.15)')}>Employer</div>
                   <h4 style={{ fontSize: '20px', margin: '12px 0 8px 0', color: 'var(--text-primary)' }}>💼 Recruiter Workspace</h4>
                   <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: '1.5' }}>
-                    Access recruiter workspace, review Kanban candidate pipelines, post jobs, and manage interviews.
+                    Access recruiter dashboard, publish new jobs, and manage candidate pipelines.
                   </p>
                 </div>
                 <button className="btn-primary" style={{ width: '100%', marginTop: '20px', backgroundColor: 'var(--accent-green)' }} onClick={() => openAuthForRole('RECRUITER', false)}>
-                  Recruiter Portal
+                  Recruiter Sign In
                 </button>
               </div>
 
               <div className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', borderTop: '4px solid var(--accent-purple)' }}>
                 <div>
-                  <div style={roleBadgeStyle('var(--accent-purple)', 'rgba(168, 85, 247, 0.15)')}>Moderator</div>
-                  <h4 style={{ fontSize: '20px', margin: '12px 0 8px 0', color: 'var(--text-primary)' }}>🛡️ Admin Moderation</h4>
+                  <div style={roleBadgeStyle('var(--accent-purple)', 'rgba(168, 85, 247, 0.15)')}>Master Admin</div>
+                  <h4 style={{ fontSize: '20px', margin: '12px 0 8px 0', color: 'var(--text-primary)' }}>🛡️ System Portal</h4>
                   <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: '1.5' }}>
-                    Access platform administration, moderate active job listings, oversee users, and manage system operations.
+                    Single master administrator portal for managing system operations and platform moderation.
                   </p>
                 </div>
                 <button className="btn-primary" style={{ width: '100%', marginTop: '20px', backgroundColor: 'var(--accent-purple)' }} onClick={() => openAuthForRole('ADMIN', false)}>
-                  Admin Portal
+                  Admin Sign In
                 </button>
               </div>
             </div>
@@ -414,53 +347,50 @@ export default function App() {
 
       {/* CANDIDATE DASHBOARD TAB */}
       {activeTab === 'candidate' && user?.role === 'CANDIDATE' && (
-        <CandidateDashboard
+        <CandidateDashboard jobs={activeJobs} user={user} savedJobs={savedJobs} onToggleSaveJob={handleToggleSaveJob} />
+      )}
+
+      {/* RECRUITER WORKSPACE TAB */}
+      {activeTab === 'recruiter' && user?.role === 'RECRUITER' && (
+        <RecruiterDashboard
           jobs={activeJobs}
           user={user}
-          savedJobs={savedJobs}
-          onToggleSaveJob={handleToggleSaveJob}
+          onOpenPostJob={() => setIsPostJobOpen(true)}
+          onUpdateRecruiterCompany={(newCompName) => {
+            const updatedUser = { ...user, companyName: newCompName, company: newCompName };
+            setUser(updatedUser);
+            localStorage.setItem('user', JSON.stringify(updatedUser));
+          }}
         />
       )}
 
-      {/* RECRUITER PIPELINE TAB */}
-      {activeTab === 'recruiter' && user?.role === 'RECRUITER' && (
-        <RecruiterDashboard jobs={activeJobs} onOpenPostJob={() => setIsPostJobOpen(true)} />
-      )}
-
-      {/* ADMIN DASHBOARD TAB */}
+      {/* SINGLE ADMIN PORTAL */}
       {activeTab === 'admin' && user?.role === 'ADMIN' && (
         <AdminDashboard jobs={activeJobs} />
       )}
 
-      {/* ABOUT / HELP PAGE */}
+      {/* ABOUT PAGE */}
       {activeTab === 'about' && (
         <main style={{ marginTop: '30px' }}>
           <h2>About TalentBridge & Help Center</h2>
-          <div style={{ display: 'grid', gap: '20px', marginTop: '20px' }}>
-            <div className="card">
-              <h3 style={{ margin: '0 0 10px 0', color: 'var(--primary-accent)' }}>🎯 Our Mission</h3>
-              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.6', margin: 0 }}>
-                TalentBridge solves fragmented job discovery by providing candidates with transparent stage tracking and equipping recruiters with visual applicant pipelines.
-              </p>
-            </div>
+          <div className="card" style={{ marginTop: '20px' }}>
+            <h3 style={{ margin: '0 0 10px 0', color: 'var(--primary-accent)' }}>🎯 Our Mission</h3>
+            <p style={{ color: 'var(--text-secondary)', lineHeight: '1.6', margin: 0 }}>
+              TalentBridge streamlines technical recruiting with multi-tenant recruiter isolation and transparent applicant stage tracking.
+            </p>
           </div>
         </main>
       )}
 
-      {/* JOBS FEED TAB WITH UNIVERSAL SAVE & APPLY */}
+      {/* JOBS TAB */}
       {activeTab === 'jobs' && (
         <main style={{ marginTop: '30px' }}>
-          {/* Active Company Filter Notification Banner */}
           {selectedCompanyFilter && (
             <div className="card" style={{ padding: '12px 20px', marginBottom: '20px', backgroundColor: 'var(--badge-bg)', border: '1px solid var(--primary-accent)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '14px', color: 'var(--primary-accent)', fontWeight: 'bold' }}>
                 🏢 Showing jobs for: "{selectedCompanyFilter}"
               </span>
-              <button
-                className="btn-secondary"
-                onClick={() => setSelectedCompanyFilter(null)}
-                style={{ fontSize: '12px', padding: '4px 10px' }}
-              >
+              <button className="btn-secondary" onClick={() => setSelectedCompanyFilter(null)} style={{ fontSize: '12px', padding: '4px 10px' }}>
                 Clear Company Filter ✕
               </button>
             </div>
@@ -470,76 +400,53 @@ export default function App() {
             <h3 style={{ margin: 0 }}>
               {selectedCompanyFilter
                 ? `Jobs at ${selectedCompanyFilter} (${filteredJobs.length})`
-                : searchTerm
-                ? `Jobs matching "${searchTerm}" (${filteredJobs.length})`
                 : `Available Opportunities (${filteredJobs.length})`}
             </h3>
-            <div style={{ display: 'flex', gap: '10px' }}>
-              {searchTerm && (
-                <button className="btn-secondary" onClick={() => setSearchTerm('')} style={{ fontSize: '12px' }}>
-                  Clear Filter ✕
-                </button>
-              )}
-              <input
-                type="text"
-                placeholder="Filter by title, company, or location..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                style={searchInputStyle}
-              />
-            </div>
+            <input
+              type="text"
+              placeholder="Filter by title, company, or location..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={searchInputStyle}
+            />
           </div>
 
-          {/* Loading Skeletons */}
           {isLoadingJobs && (
             <div style={{ display: 'grid', gap: '16px' }}>
-              <SkeletonCard />
               <SkeletonCard />
               <SkeletonCard />
             </div>
           )}
 
-          {/* Jobs List */}
           {!isLoadingJobs && filteredJobs.length === 0 && (
             <div className="card" style={{ textAlign: 'center', padding: '40px' }}>
               <p style={{ color: 'var(--text-secondary)', margin: 0 }}>No matching jobs found.</p>
-              {selectedCompanyFilter && (
-                <button className="btn-primary" onClick={() => setSelectedCompanyFilter(null)} style={{ marginTop: '15px', fontSize: '13px' }}>
-                  View All Companies & Jobs
-                </button>
-              )}
             </div>
           )}
 
           {!isLoadingJobs && filteredJobs.length > 0 && (
             <div style={{ display: 'grid', gap: '16px' }}>
-              {filteredJobs.map((job, index) => {
+              {filteredJobs.map((job, idx) => {
                 const isSaved = savedJobs.some((j) => j.id === job.id);
-                // Resolve display company name safely
-                const displayCompany = job.companyName || job.company || job.company_name || ['TechCorp Solutions', 'TechCorp Solutions', 'FinFlow Global', 'Neural Systems AI', 'CloudScale Inc.'][index % 5];
+                const compName = job.companyName || job.company || job.company_name || 'TechCorp Solutions';
 
                 return (
-                  <div key={job.id || index} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div key={job.id || idx} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <div onClick={() => setSelectedJob(job)} style={{ cursor: 'pointer', flex: 1, paddingRight: '15px' }}>
                       <span style={{ fontSize: '12px', color: 'var(--accent-purple)', fontWeight: 'bold' }}>
-                        🏢 {displayCompany}
+                        🏢 {compName}
                       </span>
                       <h4 style={{ margin: '4px 0 6px 0', color: 'var(--primary-accent)', fontSize: '18px' }}>{job.title}</h4>
                       <p style={{ margin: '0 0 10px 0', color: 'var(--text-secondary)', fontSize: '13px' }}>
-                        📍 {job.location || 'Remote'} • 💼 {job.type || 'Full-Time'} • 💰 {job.salaryRange || '$100k - $130k'}
+                        📍 {job.location || 'Remote'} • 💼 {job.type || 'Full-Time'} • 💰 {job.salaryRange || '$110k - $130k'}
                       </p>
                       <p style={{ margin: 0, fontSize: '14px', color: 'var(--text-primary)' }}>{job.description}</p>
                     </div>
 
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                      <button
-                        className="btn-secondary"
-                        onClick={() => handleToggleSaveJob(job)}
-                        style={{ fontSize: '12px', padding: '6px 12px', whiteSpace: 'nowrap', color: isSaved ? '#f59e0b' : 'inherit' }}
-                      >
+                      <button className="btn-secondary" onClick={() => handleToggleSaveJob(job)} style={{ fontSize: '12px', padding: '6px 12px', whiteSpace: 'nowrap', color: isSaved ? '#f59e0b' : 'inherit' }}>
                         {isSaved ? '⭐ Saved' : '☆ Save Job'}
                       </button>
-
                       <button className="btn-primary" onClick={() => setSelectedJob(job)} style={{ fontSize: '12px', whiteSpace: 'nowrap' }}>
                         View Details & Apply →
                       </button>
@@ -552,7 +459,7 @@ export default function App() {
         </main>
       )}
 
-      {/* 404 Standalone Catch-All Page */}
+      {/* Catch-All 404 Page */}
       {!['landing', 'jobs', 'companies', 'about', 'candidate', 'recruiter', 'admin'].includes(activeTab) && (
         <NotFound onGoHome={() => setActiveTab('landing')} />
       )}
@@ -574,10 +481,20 @@ export default function App() {
 
       <PostJobModal
         isOpen={isPostJobOpen}
+        user={user}
         onClose={() => setIsPostJobOpen(false)}
-        onJobPosted={() => {
+        onJobPosted={(newJobPayload) => {
+          // Immediately save new recruiter post locally so it renders without delay
+          const newJobWithId = {
+            id: Date.now(),
+            ...newJobPayload,
+            companyName: newJobPayload.companyName || user?.companyName || user?.company || 'My Organization',
+            status: 'Active',
+            postedDate: new Date().toISOString().split('T')[0]
+          };
+          setCustomJobs((prev) => [newJobWithId, ...prev]);
           fetchJobs();
-          addToast('New job opportunity created successfully!', 'success');
+          addToast('🎉 New job opportunity published successfully!', 'success');
         }}
       />
 
@@ -588,7 +505,6 @@ export default function App() {
         userRole={user?.role || 'CANDIDATE'}
         isSaved={selectedJob ? savedJobs.some((j) => j.id === selectedJob.id) : false}
         onToggleSave={handleToggleSaveJob}
-        onApply={handleApplyJob}
       />
 
       <ConfirmModal
