@@ -48,17 +48,31 @@ export default function CompaniesView({ jobs = [], onSelectCompany }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [industryFilter, setIndustryFilter] = useState('ALL');
 
-  // Compute active companies and dynamically count jobs assigned to each company name
+  // Dynamically count jobs assigned to each company using identical fallback resolution as App.jsx
   const companiesList = useMemo(() => {
     return MOCK_PARTNER_COMPANIES.map((company) => {
-      const matchingJobs = jobs.filter((job) => {
-        const jobCompany = (job.companyName || job.company || '').toLowerCase();
-        return jobCompany.includes(company.name.toLowerCase());
+      const matchingJobs = jobs.filter((job, index) => {
+        // Resolve Company Name dynamically across all possible backend keys
+        let jobCompany = job.companyName || job.company || job.company_name || '';
+
+        // Fallback mapping matching App.jsx logic
+        if (!jobCompany) {
+          const fallbackCompanies = [
+            'TechCorp Solutions',
+            'TechCorp Solutions',
+            'FinFlow Global',
+            'Neural Systems AI',
+            'CloudScale Inc.'
+          ];
+          jobCompany = fallbackCompanies[index % fallbackCompanies.length];
+        }
+
+        return jobCompany.toLowerCase().includes(company.name.toLowerCase());
       });
 
       return {
         ...company,
-        activeJobsCount: matchingJobs.length > 0 ? matchingJobs.length : 1
+        activeJobsCount: matchingJobs.length
       };
     });
   }, [jobs]);
