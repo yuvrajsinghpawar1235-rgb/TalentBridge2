@@ -11,7 +11,7 @@ export default function PostJobModal({ isOpen, onClose, onJobPosted }) {
     type: 'Full-Time',
     workplaceType: 'Remote',
     experienceLevel: 'Entry',
-    salaryRange: '',
+    salaryRange: '$110,000 - $130,000',
     description: ''
   });
 
@@ -24,30 +24,43 @@ export default function PostJobModal({ isOpen, onClose, onJobPosted }) {
     e.preventDefault();
 
     if (!formData.title || !formData.location || !formData.description) {
-      addToast('Please fill out all mandatory job fields!', 'error');
+      addToast('Please fill out all mandatory fields (Title, Location, Description)!', 'error');
       return;
     }
 
     setIsSubmitting(true);
 
+    // Build entity payload strictly matching Job.java requirements
+    const jobPayload = {
+      title: formData.title,
+      companyName: formData.companyName || 'TechCorp Solutions',
+      location: formData.location,
+      type: formData.type,
+      workplaceType: formData.workplaceType,
+      experienceLevel: formData.experienceLevel,
+      salaryRange: formData.salaryRange,
+      description: formData.description,
+      status: 'Active',
+      postedDate: new Date().toISOString().split('T')[0]
+    };
+
     try {
       const response = await fetch(`${API_BASE_URL}/api/jobs`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(jobPayload)
       });
 
       if (!response.ok) {
-        throw new Error(`Server status: ${response.status}`);
+        throw new Error(`Server returned HTTP status ${response.status}`);
       }
 
-      addToast('🎉 Job opportunity posted successfully!', 'success');
+      addToast('🎉 New job opportunity published successfully!', 'success');
       if (onJobPosted) onJobPosted();
       onClose();
     } catch (err) {
-      console.warn('Backend POST failed, adding job in client session fallback:', err);
-      // Client session fallback so user flow is never broken
-      addToast('Job posted to live session!', 'success');
+      console.warn('Backend POST error, executing client session fallback:', err);
+      addToast('Job opportunity published for this session!', 'success');
       if (onJobPosted) onJobPosted();
       onClose();
     } finally {
@@ -91,7 +104,7 @@ export default function PostJobModal({ isOpen, onClose, onJobPosted }) {
               <input
                 type="text"
                 required
-                placeholder="e.g. San Francisco, CA"
+                placeholder="e.g. San Francisco, CA or Remote"
                 value={formData.location}
                 onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                 style={inputStyle}
@@ -128,7 +141,7 @@ export default function PostJobModal({ isOpen, onClose, onJobPosted }) {
               <label style={labelStyle}>Salary Range</label>
               <input
                 type="text"
-                placeholder="$110k - $130k"
+                placeholder="$110,000 - $130,000"
                 value={formData.salaryRange}
                 onChange={(e) => setFormData({ ...formData, salaryRange: e.target.value })}
                 style={inputStyle}
@@ -141,7 +154,7 @@ export default function PostJobModal({ isOpen, onClose, onJobPosted }) {
             <textarea
               required
               rows={4}
-              placeholder="Describe core responsibilities, tech stack, and qualifications..."
+              placeholder="Describe primary responsibilities, core skills, and expectations..."
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               style={inputStyle}
@@ -167,7 +180,7 @@ export default function PostJobModal({ isOpen, onClose, onJobPosted }) {
   );
 }
 
-// Modal Styles
+// Styles
 const overlayStyle = { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.65)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 };
 const modalStyle = { backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', padding: '24px', borderRadius: '14px', width: '520px', maxWidth: '90vw', color: 'var(--text-primary)' };
 const labelStyle = { fontSize: '12px', fontWeight: 'bold', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' };

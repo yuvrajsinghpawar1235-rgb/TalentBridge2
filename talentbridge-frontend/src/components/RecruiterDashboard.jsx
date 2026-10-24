@@ -1,292 +1,221 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useToast } from '../context/ToastContext';
 
-export default function RecruiterDashboard({ jobs = [], onOpenPostJob }) {
-  const [activeTab, setActiveTab] = useState('pipeline');
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://talentbridge2-5.onrender.com";
 
-  // Company Profile State
-  const [companyProfile, setCompanyProfile] = useState({
-    name: 'TechCorp Solutions',
-    tagline: 'Empowering enterprises through distributed cloud architecture and intelligent AI platforms.',
-    industry: 'Software & Cloud Engineering',
-    location: 'San Francisco, CA / Remote',
-    size: '500 - 1,000 Employees',
-    founded: '2018',
-    website: 'https://techcorp.example.com',
-    description: 'TechCorp Solutions builds enterprise-grade microservice platforms, real-time analytics engines, and artificial intelligence infrastructure. Our distributed global team serves over 200 Fortune 500 clients with high-availability systems.',
-    culturePerks: ['Remote-First Culture', 'Flexible PTO', '$2,000 Learning Stipend', 'Health & Wellness Coverage', 'Stock Options / Equity']
-  });
-  const [isEditingCompany, setIsEditingCompany] = useState(false);
+// Base demo applications map
+const DEMO_APPLICATIONS = [
+  {
+    id: 101,
+    jobId: 1,
+    candidateName: 'Alex Morgan',
+    candidateEmail: 'alex.morgan@example.com',
+    companyName: 'TechCorp Solutions',
+    jobTitle: 'Full Stack Software Engineer',
+    stage: 'APPLIED',
+    appliedDate: '2026-10-20',
+    notes: 'Strong background in Spring Boot & React.'
+  },
+  {
+    id: 102,
+    jobId: 2,
+    candidateName: 'Jordan Lee',
+    candidateEmail: 'jordan.lee@example.com',
+    companyName: 'TechCorp Solutions',
+    jobTitle: 'Senior Frontend Architect',
+    stage: 'INTERVIEW',
+    appliedDate: '2026-10-18',
+    notes: 'Technical interview scheduled for Tuesday.'
+  },
+  {
+    id: 103,
+    jobId: 3,
+    candidateName: 'Taylor Swift',
+    candidateEmail: 'taylor.s@example.com',
+    companyName: 'FinFlow Global',
+    jobTitle: 'Java Backend Developer',
+    stage: 'OFFER',
+    appliedDate: '2026-10-15',
+    notes: 'Offer letter generated.'
+  }
+];
 
-  // Applicants State with Stage Movement
-  const [applicants, setApplicants] = useState([
-    {
-      id: 'app-1',
-      candidateName: 'Alex Morgan',
-      email: 'alex.morgan@example.com',
-      jobTitle: 'Full Stack Developer',
-      jobId: 1,
-      stage: 'INTERVIEW',
-      appliedDate: '2026-10-12',
-      university: 'B.Tech in Computer Science',
-      experienceLevel: 'Fresher / Entry-Level',
-      latestWork: 'Built MedConnect Healthcare App (React, Spring Boot, WebRTC) & Ai-Shorts-Generator',
-      bio: 'Passionate software engineering graduate specializing in full-stack web applications, Java backend systems, and clean modular React UI components.',
-      skills: ['React', 'Spring Boot', 'Python', 'MySQL', 'Git', 'Java 22'],
-      notes: 'Strong portfolio projects and excellent technical assessment performance.',
-      interviewTime: 'Friday at 2:30 PM EST',
-      salaryExpectation: '$110,000 - $125,000 / year'
-    },
-    {
-      id: 'app-2',
-      candidateName: 'Priya Sharma',
-      email: 'priya.s@example.com',
-      jobTitle: 'Senior Frontend Engineer',
-      jobId: 1,
-      stage: 'SCREENING',
-      appliedDate: '2026-10-14',
-      university: 'M.S. in Software Engineering',
-      experienceLevel: '3+ Years Industry Experience',
-      latestWork: 'Lead Frontend Developer at FinTech Systems — Scaled React dashboard to 500k monthly active users.',
-      bio: 'Frontend architect with deep expertise in performance optimization, design systems, and TypeScript.',
-      skills: ['React', 'TypeScript', 'Redux Context', 'CSS Modules', 'GraphQL'],
-      notes: 'Reviewing code samples from public GitHub repository.',
-      interviewTime: '',
-      salaryExpectation: '$135,000 - $150,000 / year'
-    },
-    {
-      id: 'app-3',
-      candidateName: 'Rohan Verma',
-      email: 'rohan.v@example.com',
-      jobTitle: 'Java Backend Engineer',
-      jobId: 2,
-      stage: 'APPLIED',
-      appliedDate: '2026-10-18',
-      university: 'B.Tech in Information Technology',
-      experienceLevel: '1 Year Experience',
-      latestWork: 'Backend Engineer Intern — Microservices architecture using Spring Data JPA and MySQL Server.',
-      bio: 'Backend developer focused on database optimization, RESTful API design, and JVM execution mechanics.',
-      skills: ['Java 22', 'Spring Boot', 'MySQL', 'Docker', 'REST API'],
-      notes: 'Initial application submitted. Awaiting recruiter review.',
-      interviewTime: '',
-      salaryExpectation: '$95,000 - $110,000 / year'
-    }
-  ]);
+export default function RecruiterDashboard({ jobs = [], user, onOpenPostJob }) {
+  const [applications, setApplications] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [activeStageFilter, setActiveStageFilter] = useState('ALL');
+  const { addToast } = useToast();
 
-  const [selectedCandidate, setSelectedCandidate] = useState(null);
+  // Determine active recruiter company
+  const recruiterCompany = user?.companyName || user?.company || 'TechCorp Solutions';
 
-  // Stage change handler
+  // Fetch applications & filter strictly by recruiter company
+  useEffect(() => {
+    setIsLoading(true);
+    fetch(`${API_BASE_URL}/api/applications`)
+      .then((res) => {
+        if (!res.ok) throw new Error('Failed to fetch applications');
+        return res.json();
+      })
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          // Filter strictly for this recruiter's company or candidate submissions
+          const companyApps = data.filter(
+            (app) => (app.companyName || '').toLowerCase() === recruiterCompany.toLowerCase()
+          );
+          setApplications(companyApps);
+        } else {
+          // Fallback demo apps filtered strictly by recruiter company
+          const companyDemoApps = DEMO_APPLICATIONS.filter(
+            (app) => app.companyName.toLowerCase() === recruiterCompany.toLowerCase()
+          );
+          setApplications(companyDemoApps);
+        }
+        setIsLoading(false);
+      })
+      .catch(() => {
+        // Fallback filtering on network error
+        const companyDemoApps = DEMO_APPLICATIONS.filter(
+          (app) => app.companyName.toLowerCase() === recruiterCompany.toLowerCase()
+        );
+        setApplications(companyDemoApps);
+        setIsLoading(false);
+      });
+  }, [recruiterCompany]);
+
+  // Filter posted jobs strictly for this recruiter's company
+  const myCompanyJobs = jobs.filter(
+    (job) => (job.companyName || job.company || '').toLowerCase() === recruiterCompany.toLowerCase()
+  );
+
+  // Update applicant stage handler
   const handleStageChange = (appId, newStage) => {
-    setApplicants(prev => prev.map(app => app.id === appId ? { ...app, stage: newStage } : app));
-    if (selectedCandidate && selectedCandidate.id === appId) {
-      setSelectedCandidate(prev => ({ ...prev, stage: newStage }));
-    }
+    setApplications((prev) =>
+      prev.map((app) => (app.id === appId ? { ...app, stage: newStage } : app))
+    );
+    addToast(`Candidate stage updated to "${newStage}"`, 'info');
   };
 
-  const stages = [
-    { key: 'APPLIED', label: '📥 Applied', color: 'var(--primary-accent)' },
-    { key: 'SCREENING', label: '🔍 Screening', color: '#8b5cf6' },
-    { key: 'INTERVIEW', label: '📅 Interview', color: '#f59e0b' },
-    { key: 'OFFER', label: '🎉 Offer Extended', color: 'var(--accent-green)' },
-    { key: 'REJECTED', label: '✕ Rejected', color: '#ef4444' }
-  ];
+  const filteredApplications = applications.filter(
+    (app) => activeStageFilter === 'ALL' || app.stage === activeStageFilter
+  );
 
   return (
     <div style={{ marginTop: '20px' }}>
-      {/* Sub-Navigation */}
-      <div style={subnavStyle}>
-        <button onClick={() => setActiveTab('pipeline')} style={subnavTabStyle(activeTab === 'pipeline')}>📋 Recruiter Pipeline</button>
-        <button onClick={() => setActiveTab('jobs')} style={subnavTabStyle(activeTab === 'jobs')}>💼 Job Listings ({jobs.length})</button>
-        <button onClick={() => setActiveTab('applicants')} style={subnavTabStyle(activeTab === 'applicants')}>👥 Applicants ({applicants.length})</button>
-        <button onClick={() => setActiveTab('company')} style={subnavTabStyle(activeTab === 'company')}>🏢 Company Profile</button>
-        <button onClick={() => setActiveTab('analytics')} style={subnavTabStyle(activeTab === 'analytics')}>📊 Hiring Analytics</button>
+      {/* Recruiter Workspace Header */}
+      <div style={headerBannerStyle}>
+        <div>
+          <span style={roleBadgeStyle}>💼 Recruiter Workspace</span>
+          <h2 style={{ margin: '8px 0 4px 0', fontSize: '24px', color: 'var(--text-primary)' }}>
+            {recruiterCompany} Hiring Dashboard
+          </h2>
+          <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '14px' }}>
+            Manage active job listings and track candidate pipelines for {recruiterCompany}.
+          </p>
+        </div>
+        <button className="btn-primary" onClick={onOpenPostJob} style={{ backgroundColor: 'var(--accent-green)', padding: '10px 18px' }}>
+          + Post New Job Opportunity
+        </button>
       </div>
 
-      {/* RECRUITER PIPELINE TAB */}
-      {activeTab === 'pipeline' && (
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '15px' }}>
-            <div>
-              <h2 style={{ margin: '0 0 4px 0', fontSize: '22px', color: 'var(--text-primary)' }}>Recruiter Pipeline</h2>
-              <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '13px' }}>Track candidate progress and advance applicants across hiring stages.</p>
-            </div>
-            <button className="btn-primary" onClick={onOpenPostJob} style={{ backgroundColor: 'var(--accent-green)' }}>+ Post New Opportunity</button>
-          </div>
+      {/* Analytics Summary */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+        <div className="card" style={{ borderLeft: '4px solid var(--primary-accent)' }}>
+          <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 'bold' }}>ACTIVE LISTINGS</span>
+          <h3 style={{ margin: '6px 0 0 0', fontSize: '28px', color: 'var(--primary-accent)' }}>{myCompanyJobs.length}</h3>
+        </div>
+        <div className="card" style={{ borderLeft: '4px solid var(--accent-green)' }}>
+          <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 'bold' }}>TOTAL APPLICANTS</span>
+          <h3 style={{ margin: '6px 0 0 0', fontSize: '28px', color: 'var(--accent-green)' }}>{applications.length}</h3>
+        </div>
+        <div className="card" style={{ borderLeft: '4px solid var(--accent-purple)' }}>
+          <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 'bold' }}>IN INTERVIEW</span>
+          <h3 style={{ margin: '6px 0 0 0', fontSize: '28px', color: 'var(--accent-purple)' }}>
+            {applications.filter((a) => a.stage === 'INTERVIEW').length}
+          </h3>
+        </div>
+      </div>
 
-          <div style={kanbanGridStyle}>
-            {stages.map(col => {
-              const colApplicants = applicants.filter(a => a.stage === col.key);
-              return (
-                <div key={col.key} style={kanbanColumnStyle}>
-                  <div style={{ ...kanbanColumnHeaderStyle, borderBottom: `3px solid ${col.color}` }}>
-                    <span style={{ fontWeight: '700', fontSize: '13px', color: 'var(--text-primary)' }}>{col.label}</span>
-                    <span style={counterBadgeStyle}>{colApplicants.length}</span>
-                  </div>
+      {/* Candidate Application Pipeline */}
+      <div className="card">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+          <h3 style={{ margin: 0 }}>Candidate Pipeline ({filteredApplications.length})</h3>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '12px' }}>
-                    {colApplicants.map(app => (
-                      <div key={app.id} className="card" style={{ padding: '12px', borderLeft: `3px solid ${col.color}` }}>
-                        <div onClick={() => setSelectedCandidate(app)} style={{ cursor: 'pointer' }}>
-                          <h4 style={{ margin: '0 0 4px 0', fontSize: '15px', color: 'var(--primary-accent)' }}>{app.candidateName}</h4>
-                          <p style={{ margin: '0 0 8px 0', fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '600' }}>{app.jobTitle}</p>
-
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '8px' }}>
-                            {app.skills.slice(0, 3).map((s, idx) => (
-                              <span key={idx} style={miniSkillStyle}>{s}</span>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Quick Stage Movement */}
-                        <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid var(--border-color)' }}>
-                          <label style={{ fontSize: '10px', color: 'var(--text-secondary)', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>Move Stage:</label>
-                          <select
-                            value={app.stage}
-                            onChange={(e) => handleStageChange(app.id, e.target.value)}
-                            style={{ ...inputStyle, padding: '4px 6px', fontSize: '11px', height: '28px' }}
-                          >
-                            {stages.map(s => (
-                              <option key={s.key} value={s.key}>{s.label}</option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
+          {/* Stage Filter Pills */}
+          <div style={{ display: 'flex', gap: '8px' }}>
+            {['ALL', 'APPLIED', 'SCREENING', 'INTERVIEW', 'OFFER', 'REJECTED'].map((stage) => (
+              <button
+                key={stage}
+                onClick={() => setActiveStageFilter(stage)}
+                style={{
+                  padding: '4px 12px',
+                  borderRadius: '16px',
+                  border: 'none',
+                  fontSize: '12px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  backgroundColor: activeStageFilter === stage ? 'var(--primary-accent)' : 'var(--bg-secondary)',
+                  color: activeStageFilter === stage ? '#ffffff' : 'var(--text-secondary)'
+                }}
+              >
+                {stage}
+              </button>
+            ))}
           </div>
         </div>
-      )}
 
-      {/* JOB LISTINGS TAB */}
-      {activeTab === 'jobs' && (
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-            <h3 style={{ margin: 0 }}>Active Posted Positions ({jobs.length})</h3>
-            <button className="btn-primary" onClick={onOpenPostJob} style={{ backgroundColor: 'var(--accent-green)' }}>+ Create Job Post</button>
+        {isLoading ? (
+          <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '20px' }}>Loading applicant pipeline...</p>
+        ) : filteredApplications.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>
+            <p style={{ margin: 0, fontSize: '15px' }}>No candidates found in this pipeline stage.</p>
+            <p style={{ fontSize: '13px', marginTop: '6px' }}>New candidate applications submitted to {recruiterCompany} will automatically appear here.</p>
           </div>
-
-          <div style={{ display: 'grid', gap: '14px' }}>
-            {jobs.length === 0 ? (
-              <div className="card" style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>
-                No active jobs posted yet. Click "+ Create Job Post" to add one!
-              </div>
-            ) : (
-              jobs.map(job => (
-                <div key={job.id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
-                  <div>
-                    <span style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--accent-green)', backgroundColor: 'rgba(16, 185, 129, 0.15)', padding: '3px 8px', borderRadius: '10px' }}>
-                      ● Active Listing
-                    </span>
-                    <h4 style={{ margin: '6px 0 4px 0', fontSize: '18px', color: 'var(--primary-accent)' }}>{job.title}</h4>
-                    <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)' }}>
-                      📍 {job.location} • 💼 {job.type} • 💰 {job.salaryRange}
-                    </p>
-                  </div>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <button className="btn-secondary" style={{ fontSize: '12px' }} onClick={() => setActiveTab('pipeline')}>Manage Candidates</button>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* APPLICANTS LIST TAB */}
-      {activeTab === 'applicants' && (
-        <div>
-          <h3 style={{ marginBottom: '16px' }}>Candidate Applicants ({applicants.length})</h3>
-          <div style={{ display: 'grid', gap: '14px' }}>
-            {applicants.map(app => (
-              <div key={app.id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
+        ) : (
+          <div style={{ display: 'grid', gap: '12px' }}>
+            {filteredApplications.map((app) => (
+              <div key={app.id} style={applicantCardStyle}>
                 <div>
-                  <span style={stageBadgeStyle(app.stage)}>{app.stage}</span>
-                  <h4 style={{ margin: '6px 0 4px 0', color: 'var(--primary-accent)', fontSize: '18px' }}>{app.candidateName}</h4>
-                  <p style={{ margin: '0 0 6px 0', fontSize: '13px', color: 'var(--text-secondary)' }}>
-                    Applied for <strong>{app.jobTitle}</strong> • 🎓 {app.university} • 💼 {app.experienceLevel}
+                  <h4 style={{ margin: '0 0 4px 0', fontSize: '16px', color: 'var(--text-primary)' }}>{app.candidateName}</h4>
+                  <p style={{ margin: '0 0 6px 0', fontSize: '13px', color: 'var(--primary-accent)' }}>
+                    Applying for: <strong>{app.jobTitle}</strong>
                   </p>
-                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                    {app.skills.map((s, idx) => (
-                      <span key={idx} style={miniSkillStyle}>{s}</span>
-                    ))}
-                  </div>
+                  <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-secondary)' }}>
+                    ✉️ {app.candidateEmail} • 📅 Applied {app.appliedDate || 'Recently'}
+                  </p>
+                  {app.notes && (
+                    <p style={{ margin: '8px 0 0 0', fontSize: '12px', color: 'var(--text-primary)', fontStyle: 'italic', backgroundColor: 'var(--bg-secondary)', padding: '6px 10px', borderRadius: '6px' }}>
+                      "{app.notes}"
+                    </p>
+                  )}
                 </div>
 
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button
-                    className="btn-secondary"
-                    onClick={() => setSelectedCandidate(app)}
-                    style={{ fontSize: '12px' }}
+                {/* Pipeline Stage Selector */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
+                  <label style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>UPDATE STAGE</label>
+                  <select
+                    value={app.stage}
+                    onChange={(e) => handleStageChange(app.id, e.target.value)}
+                    style={selectStyle}
                   >
-                    View Details
-                  </button>
+                    <option value="APPLIED">Applied</option>
+                    <option value="SCREENING">Screening</option>
+                    <option value="INTERVIEW">Interview</option>
+                    <option value="OFFER">Offer</option>
+                    <option value="REJECTED">Rejected</option>
+                  </select>
                 </div>
               </div>
             ))}
           </div>
-        </div>
-      )}
-
-      {/* COMPANY PROFILE TAB */}
-      {activeTab === 'company' && (
-        <div className="card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-            <h3 style={{ margin: 0, color: 'var(--text-primary)' }}>Company Profile Overview</h3>
-            <button
-              className="btn-secondary"
-              onClick={() => setIsEditingCompany(!isEditingCompany)}
-              style={{ fontSize: '12px' }}
-            >
-              {isEditingCompany ? 'Save Profile' : 'Edit Profile'}
-            </button>
-          </div>
-
-          <div style={{ display: 'grid', gap: '16px' }}>
-            <div>
-              <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>Company Name</label>
-              <h4 style={{ margin: '4px 0 0 0', fontSize: '20px', color: 'var(--text-primary)' }}>{companyProfile.name}</h4>
-            </div>
-            <div>
-              <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>Tagline</label>
-              <p style={{ margin: '4px 0 0 0', color: 'var(--text-primary)' }}>{companyProfile.tagline}</p>
-            </div>
-            <div>
-              <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>About</label>
-              <p style={{ margin: '4px 0 0 0', color: 'var(--text-secondary)', lineHeight: '1.5' }}>{companyProfile.description}</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* HIRING ANALYTICS TAB */}
-      {activeTab === 'analytics' && (
-        <div className="card">
-          <h3 style={{ margin: '0 0 16px 0', color: 'var(--text-primary)' }}>Hiring Pipeline Analytics</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
-            <div style={{ padding: '16px', backgroundColor: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-              <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '600' }}>Total Applicants</span>
-              <h3 style={{ fontSize: '24px', fontWeight: '800', margin: '6px 0 0 0', color: 'var(--primary-accent)' }}>{applicants.length}</h3>
-            </div>
-            <div style={{ padding: '16px', backgroundColor: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-              <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '600' }}>Active Openings</span>
-              <h3 style={{ fontSize: '24px', fontWeight: '800', margin: '6px 0 0 0', color: 'var(--accent-green)' }}>{jobs.length}</h3>
-            </div>
-          </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
 
-// Helpers & Styles specific to Recruiter Dashboard
-const subnavStyle = { display: 'flex', gap: '8px', marginBottom: '25px', overflowX: 'auto', paddingBottom: '6px' };
-const subnavTabStyle = (isActive) => ({ padding: '8px 16px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: isActive ? 'var(--accent-green)' : 'var(--bg-card)', color: isActive ? '#fff' : 'var(--text-primary)', fontSize: '13px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' });
-const kanbanGridStyle = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px', alignItems: 'start' };
-const kanbanColumnStyle = { backgroundColor: 'var(--bg-secondary)', borderRadius: '10px', padding: '12px', border: '1px solid var(--border-color)' };
-const kanbanColumnHeaderStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '8px' };
-const counterBadgeStyle = { fontSize: '11px', fontWeight: 'bold', backgroundColor: 'var(--bg-card)', color: 'var(--text-primary)', padding: '2px 6px', borderRadius: '6px', border: '1px solid var(--border-color)' };
-const miniSkillStyle = { fontSize: '10px', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-secondary)', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--border-color)' };
-const stageBadgeStyle = (stage) => ({ fontSize: '10px', fontWeight: 'bold', padding: '2px 8px', borderRadius: '10px', backgroundColor: stage === 'OFFER' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(139, 92, 246, 0.15)', color: stage === 'OFFer' ? 'var(--accent-green)' : '#8b5cf6' });
-const inputStyle = { padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)', fontSize: '14px', outline: 'none', width: '100%' };
+// Styles
+const headerBannerStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--bg-secondary)', padding: '20px 24px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '20px', flexWrap: 'wrap', gap: '15px' };
+const roleBadgeStyle = { fontSize: '11px', fontWeight: 'bold', color: 'var(--accent-green)', backgroundColor: 'rgba(16, 185, 129, 0.15)', padding: '4px 10px', borderRadius: '12px' };
+const applicantCardStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-card)', flexWrap: 'wrap', gap: '12px' };
+const selectStyle = { padding: '6px 12px', borderRadius: '6px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)', fontSize: '12px', outline: 'none', fontWeight: 'bold' };
