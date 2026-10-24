@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import RegisterCompanyModal from './RegisterCompanyModal';
 import { useToast } from '../context/ToastContext';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://talentbridge2-5.onrender.com";
 
-// Seeded applications ONLY for demo accounts
+// Seeded applications ONLY for demo recruiter accounts
 const MOCK_DEMO_APPLICATIONS = [
   {
     id: 101,
@@ -34,6 +35,7 @@ export default function RecruiterDashboard({ jobs = [], user, onOpenPostJob, onU
   const [isLoading, setIsLoading] = useState(true);
   const [activeStageFilter, setActiveStageFilter] = useState('ALL');
   const [isEditingCompany, setIsEditingCompany] = useState(false);
+  const [isRegisterCompanyOpen, setIsRegisterCompanyOpen] = useState(false);
   const [companyNameInput, setCompanyNameInput] = useState(user?.companyName || user?.company || 'My Organization');
   const { addToast } = useToast();
 
@@ -54,7 +56,6 @@ export default function RecruiterDashboard({ jobs = [], user, onOpenPostJob, onU
           );
           setApplications(companyApps);
         } else {
-          // Preseed ONLY if demo account
           if (isDemoAccount) {
             setApplications(MOCK_DEMO_APPLICATIONS);
           } else {
@@ -64,7 +65,6 @@ export default function RecruiterDashboard({ jobs = [], user, onOpenPostJob, onU
         setIsLoading(false);
       })
       .catch(() => {
-        // Preseed ONLY if demo account on fallback
         if (isDemoAccount) {
           setApplications(MOCK_DEMO_APPLICATIONS);
         } else {
@@ -74,7 +74,7 @@ export default function RecruiterDashboard({ jobs = [], user, onOpenPostJob, onU
       });
   }, [recruiterCompany, isDemoAccount]);
 
-  // Filter jobs matching this recruiter's company
+  // Filter jobs strictly matching this recruiter's company
   const myCompanyJobs = jobs.filter(
     (job) => (job.companyName || job.company || '').toLowerCase() === recruiterCompany.toLowerCase()
   );
@@ -87,6 +87,22 @@ export default function RecruiterDashboard({ jobs = [], user, onOpenPostJob, onU
     }
     setIsEditingCompany(false);
     addToast(`Company name updated to "${companyNameInput.trim()}"`, 'success');
+  };
+
+  const handleCompanyRegistered = (newCompany) => {
+    // Save to local storage for persistence across views
+    try {
+      const stored = localStorage.getItem('registeredCompanies');
+      const existing = stored ? JSON.parse(stored) : [];
+      localStorage.setItem('registeredCompanies', JSON.stringify([newCompany, ...existing]));
+    } catch (e) {
+      console.warn('LocalStorage save failed', e);
+    }
+
+    if (onUpdateRecruiterCompany) {
+      onUpdateRecruiterCompany(newCompany.name);
+    }
+    setCompanyNameInput(newCompany.name);
   };
 
   const handleStageChange = (appId, newStage) => {
@@ -102,7 +118,7 @@ export default function RecruiterDashboard({ jobs = [], user, onOpenPostJob, onU
 
   return (
     <div style={{ marginTop: '20px' }}>
-      {/* Header with Editable Company Name */}
+      {/* Header Banner with Both Actions */}
       <div style={headerBannerStyle}>
         <div>
           <span style={roleBadgeStyle}>💼 Recruiter Workspace</span>
@@ -123,7 +139,7 @@ export default function RecruiterDashboard({ jobs = [], user, onOpenPostJob, onU
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '8px 0 4px 0' }}>
               <h2 style={{ margin: 0, fontSize: '24px', color: 'var(--text-primary)' }}>{recruiterCompany}</h2>
               <button onClick={() => setIsEditingCompany(true)} className="btn-secondary" style={{ padding: '2px 8px', fontSize: '11px' }}>
-                ✏️ Edit Company Name
+                ✏️ Edit Name
               </button>
             </div>
           )}
@@ -133,9 +149,24 @@ export default function RecruiterDashboard({ jobs = [], user, onOpenPostJob, onU
           </p>
         </div>
 
-        <button className="btn-primary" onClick={onOpenPostJob} style={{ backgroundColor: 'var(--accent-green)', padding: '10px 18px' }}>
-          + Post New Job Opportunity
-        </button>
+        {/* Both Action Buttons Restored */}
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <button
+            className="btn-secondary"
+            onClick={() => setIsRegisterCompanyOpen(true)}
+            style={{ padding: '10px 16px', fontWeight: 'bold' }}
+          >
+            🏢 Register / Launch Company
+          </button>
+
+          <button
+            className="btn-primary"
+            onClick={onOpenPostJob}
+            style={{ backgroundColor: 'var(--accent-green)', padding: '10px 18px' }}
+          >
+            + Post New Job Opportunity
+          </button>
+        </div>
       </div>
 
       {/* Analytics Summary */}
@@ -156,7 +187,7 @@ export default function RecruiterDashboard({ jobs = [], user, onOpenPostJob, onU
         </div>
       </div>
 
-      {/* Candidate Application Pipeline */}
+      {/* Candidate Pipeline */}
       <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
           <h3 style={{ margin: 0 }}>Candidate Pipeline ({filteredApplications.length})</h3>
@@ -223,6 +254,13 @@ export default function RecruiterDashboard({ jobs = [], user, onOpenPostJob, onU
           </div>
         )}
       </div>
+
+      {/* Register Company Modal */}
+      <RegisterCompanyModal
+        isOpen={isRegisterCompanyOpen}
+        onClose={() => setIsRegisterCompanyOpen(false)}
+        onCompanyRegistered={handleCompanyRegistered}
+      />
     </div>
   );
 }
