@@ -1,18 +1,21 @@
 import React, { useState } from 'react';
 import { useToast } from '../context/ToastContext';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://talentbridge2-5.onrender.com';
+
 export default function RegisterCompanyModal({ isOpen, onClose, onCompanyRegistered }) {
   const [companyName, setCompanyName] = useState('');
   const [industry, setIndustry] = useState('Software & Engineering');
   const [location, setLocation] = useState('');
   const [size, setSize] = useState('10 - 50 Employees');
   const [description, setDescription] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { addToast } = useToast();
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!companyName.trim() || !location.trim()) {
@@ -20,8 +23,9 @@ export default function RegisterCompanyModal({ isOpen, onClose, onCompanyRegiste
       return;
     }
 
-    const newCompany = {
-      id: Date.now(),
+    setIsSubmitting(true);
+
+    const newCompanyPayload = {
       name: companyName.trim(),
       industry,
       location: location.trim(),
@@ -31,15 +35,38 @@ export default function RegisterCompanyModal({ isOpen, onClose, onCompanyRegiste
       perks: ['Growth Stage', 'Innovative Culture', 'Competitive Benefits']
     };
 
-    if (onCompanyRegistered) {
-      onCompanyRegistered(newCompany);
-    }
+    try {
+      // 1. Send POST request to backend API
+      const response = await fetch(`${API_BASE_URL}/api/companies`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newCompanyPayload)
+      });
 
-    addToast(`🎉 Company "${companyName}" registered successfully!`, 'success');
-    setCompanyName('');
-    setLocation('');
-    setDescription('');
-    onClose();
+      let savedCompany = { ...newCompanyPayload, id: Date.now() };
+      if (response.ok) {
+        savedCompany = await response.json();
+      }
+
+      if (onCompanyRegistered) {
+        onCompanyRegistered(savedCompany);
+      }
+
+      addToast(`🎉 Company "${companyName}" registered successfully!`, 'success');
+      setCompanyName('');
+      setLocation('');
+      setDescription('');
+      onClose();
+    } catch (err) {
+      console.warn('Backend database POST failed for company registration, saving locally:', err);
+      if (onCompanyRegistered) {
+        onCompanyRegistered({ ...newCompanyPayload, id: Date.now() });
+      }
+      addToast(`🎉 Company "${companyName}" registered successfully!`, 'success');
+      onClose();
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -109,11 +136,11 @@ export default function RegisterCompanyModal({ isOpen, onClose, onCompanyRegiste
           </div>
 
           <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-            <button type="button" className="btn-secondary" onClick={onClose} style={{ flex: 1 }}>
+            <button type="button" className="btn-secondary" onClick={onClose} style={{ flex: 1 }} disabled={isSubmitting}>
               Cancel
             </button>
-            <button type="submit" className="btn-primary" style={{ flex: 1, backgroundColor: 'var(--primary-accent)' }}>
-              Launch Company Profile →
+            <button type="submit" className="btn-primary" style={{ flex: 1, backgroundColor: 'var(--primary-accent)' }} disabled={isSubmitting}>
+              {isSubmitting ? 'Launching...' : 'Launch Company Profile →'}
             </button>
           </div>
         </form>

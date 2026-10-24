@@ -1,60 +1,79 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useToast } from '../context/ToastContext';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://talentbridge2-5.onrender.com";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://talentbridge2-5.onrender.com';
 
-export default function PostJobModal({ isOpen, user, onClose, onJobPosted }) {
-  const [formData, setFormData] = useState({
-    title: '',
-    companyName: user?.companyName || user?.company || 'TechCorp Solutions',
-    location: '',
-    type: 'Full-Time',
-    workplaceType: 'Remote',
-    experienceLevel: 'Entry',
-    salaryRange: '$110,000 - $130,000',
-    description: ''
-  });
-
+export default function PostJobModal({ isOpen, onClose, onJobPosted, user }) {
+  const [title, setTitle] = useState('');
+  const [location, setLocation] = useState('');
+  const [type, setType] = useState('Full-time');
+  const [workplaceType, setWorkplaceType] = useState('Remote');
+  const [experienceLevel, setExperienceLevel] = useState('Mid');
+  const [salaryRange, setSalaryRange] = useState('');
+  const [description, setDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { addToast } = useToast();
 
-  useEffect(() => {
-    if (user?.companyName || user?.company) {
-      setFormData((prev) => ({ ...prev, companyName: user.companyName || user.company }));
-    }
-  }, [user]);
+  const { addToast } = useToast();
 
   if (!isOpen) return null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.title || !formData.location || !formData.description) {
-      addToast('Please fill out all mandatory fields!', 'error');
+    if (!title.trim() || !location.trim() || !description.trim()) {
+      addToast('Please fill out all required fields!', 'error');
       return;
     }
 
     setIsSubmitting(true);
 
+    const companyName = user?.companyName || user?.company || 'My Organization';
+
     const jobPayload = {
-      ...formData,
-      companyName: formData.companyName || user?.companyName || 'My Organization',
+      title: title.trim(),
+      companyName: companyName,
+      location: location.trim(),
+      type,
+      workplaceType,
+      experienceLevel,
+      salaryRange: salaryRange.trim() || '$100,000 - $130,000',
+      description: description.trim(),
       status: 'Active',
       postedDate: new Date().toISOString().split('T')[0]
     };
 
     try {
-      await fetch(`${API_BASE_URL}/api/jobs`, {
+      // 1. Send POST request directly to MySQL Spring Boot backend
+      const response = await fetch(`${API_BASE_URL}/api/jobs`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(jobPayload)
       });
 
-      if (onJobPosted) onJobPosted(jobPayload);
+      let savedJob = jobPayload;
+      if (response.ok) {
+        savedJob = await response.json();
+      } else {
+        console.warn('Backend database POST failed or returned non-200. Falling back to local state update.');
+      }
+
+      // 2. Trigger parent callback to update UI immediately
+      if (onJobPosted) {
+        onJobPosted(savedJob);
+      }
+
+      // Reset form
+      setTitle('');
+      setLocation('');
+      setSalaryRange('');
+      setDescription('');
       onClose();
-    } catch {
-      // Execute local session persistence fallback on network exception
-      if (onJobPosted) onJobPosted(jobPayload);
+    } catch (err) {
+      console.error('Error posting job to database:', err);
+      // Fallback local UI update if backend network error occurs
+      if (onJobPosted) {
+        onJobPosted({ ...jobPayload, id: Date.now() });
+      }
       onClose();
     } finally {
       setIsSubmitting(false);
@@ -65,7 +84,7 @@ export default function PostJobModal({ isOpen, user, onClose, onJobPosted }) {
     <div style={overlayStyle}>
       <div style={modalStyle}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <h3 style={{ margin: 0, color: 'var(--text-primary)' }}>💼 Post New Job Opportunity</h3>
+          <h3 style={{ margin: 0, color: 'var(--text-primary)' }}>💼 Post a New Job Opportunity</h3>
           <button onClick={onClose} style={closeXStyle}>✕</button>
         </div>
 
@@ -75,94 +94,84 @@ export default function PostJobModal({ isOpen, user, onClose, onJobPosted }) {
             <input
               type="text"
               required
-              placeholder="e.g. Senior Frontend Architect"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              placeholder="e.g. Senior Java Engineer"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
               style={inputStyle}
             />
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
             <div>
-              <label style={labelStyle}>Company Name</label>
-              <input
-                type="text"
-                value={formData.companyName}
-                onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
-                style={inputStyle}
-              />
+              <label style={labelStyle}>Employment Type</label>
+              <select value={type} onChange={(e) => setType(e.target.value)} style={inputStyle}>
+                <option value="Full-time">Full-time</option>
+                <option value="Part-time">Part-time</option>
+                <option value="Contract">Contract</option>
+                <option value="Internship">Internship</option>
+              </select>
+            </div>
+            <div>
+              <label style={labelStyle}>Workplace Setup</label>
+              <select value={workplaceType} onChange={(e) => setWorkplaceType(e.target.value)} style={inputStyle}>
+                <option value="Remote">Remote</option>
+                <option value="Hybrid">Hybrid</option>
+                <option value="On-site">On-site</option>
+              </select>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+            <div>
+              <label style={labelStyle}>Experience Level</label>
+              <select value={experienceLevel} onChange={(e) => setExperienceLevel(e.target.value)} style={inputStyle}>
+                <option value="Entry">Entry Level</option>
+                <option value="Mid">Mid Level</option>
+                <option value="Senior">Senior Level</option>
+                <option value="Lead">Lead / Staff</option>
+              </select>
             </div>
             <div>
               <label style={labelStyle}>Location *</label>
               <input
                 type="text"
                 required
-                placeholder="e.g. Remote or San Francisco, CA"
-                value={formData.location}
-                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                style={inputStyle}
-              />
-            </div>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
-            <div>
-              <label style={labelStyle}>Job Type</label>
-              <select
-                value={formData.type}
-                onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                style={inputStyle}
-              >
-                <option value="Full-Time">Full-Time</option>
-                <option value="Part-Time">Part-Time</option>
-                <option value="Contract">Contract</option>
-              </select>
-            </div>
-            <div>
-              <label style={labelStyle}>Workplace</label>
-              <select
-                value={formData.workplaceType}
-                onChange={(e) => setFormData({ ...formData, workplaceType: e.target.value })}
-                style={inputStyle}
-              >
-                <option value="Remote">Remote</option>
-                <option value="Hybrid">Hybrid</option>
-                <option value="On-site">On-site</option>
-              </select>
-            </div>
-            <div>
-              <label style={labelStyle}>Salary Range</label>
-              <input
-                type="text"
-                value={formData.salaryRange}
-                onChange={(e) => setFormData({ ...formData, salaryRange: e.target.value })}
+                placeholder="e.g. San Francisco, CA or Remote"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
                 style={inputStyle}
               />
             </div>
           </div>
 
           <div>
+            <label style={labelStyle}>Salary Range</label>
+            <input
+              type="text"
+              placeholder="e.g. $120,000 - $145,000"
+              value={salaryRange}
+              onChange={(e) => setSalaryRange(e.target.value)}
+              style={inputStyle}
+            />
+          </div>
+
+          <div>
             <label style={labelStyle}>Job Description *</label>
             <textarea
-              required
               rows={4}
-              placeholder="Describe core duties and skills required..."
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              required
+              placeholder="Outline responsibilities, requirements, and qualifications..."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
               style={inputStyle}
             />
           </div>
 
           <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-            <button type="button" className="btn-secondary" onClick={onClose} style={{ flex: 1 }}>
+            <button type="button" className="btn-secondary" onClick={onClose} style={{ flex: 1 }} disabled={isSubmitting}>
               Cancel
             </button>
-            <button
-              type="submit"
-              className="btn-primary"
-              disabled={isSubmitting}
-              style={{ flex: 1, backgroundColor: 'var(--accent-green)' }}
-            >
+            <button type="submit" className="btn-primary" style={{ flex: 1, backgroundColor: 'var(--accent-green)' }} disabled={isSubmitting}>
               {isSubmitting ? 'Publishing...' : 'Publish Job Listing →'}
             </button>
           </div>
@@ -173,7 +182,7 @@ export default function PostJobModal({ isOpen, user, onClose, onJobPosted }) {
 }
 
 const overlayStyle = { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.65)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 };
-const modalStyle = { backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', padding: '24px', borderRadius: '14px', width: '520px', maxWidth: '90vw', color: 'var(--text-primary)' };
+const modalStyle = { backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', padding: '24px', borderRadius: '14px', width: '500px', maxWidth: '90vw', color: 'var(--text-primary)' };
 const labelStyle = { fontSize: '12px', fontWeight: 'bold', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' };
 const inputStyle = { width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)', fontSize: '13px', outline: 'none' };
 const closeXStyle = { background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: '18px', cursor: 'pointer' };
