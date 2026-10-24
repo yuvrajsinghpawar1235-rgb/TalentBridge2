@@ -24,11 +24,10 @@ const BASE_COMPANIES = [
   }
 ];
 
-export default function CompaniesView({ jobs = [], onSelectCompany, user }) {
+export default function CompaniesView({ jobs = [], onSelectCompany }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
 
-  // Local storage persistence for custom registered companies
   const [customCompanies, setCustomCompanies] = useState(() => {
     try {
       const stored = localStorage.getItem('registeredCompanies');
@@ -44,17 +43,12 @@ export default function CompaniesView({ jobs = [], onSelectCompany, user }) {
     localStorage.setItem('registeredCompanies', JSON.stringify(updated));
   };
 
-  // Dynamically combine Base + Custom Registered Companies + Auto-discovered Job Companies
   const companiesList = useMemo(() => {
     const map = new Map();
 
-    // 1. Add base companies
     BASE_COMPANIES.forEach((c) => map.set(c.name.toLowerCase(), { ...c }));
-
-    // 2. Add recruiter registered custom companies
     customCompanies.forEach((c) => map.set(c.name.toLowerCase(), { ...c }));
 
-    // 3. Auto-discover companies from published jobs
     jobs.forEach((job) => {
       const companyName = job.companyName || job.company || job.company_name;
       if (companyName) {
@@ -67,7 +61,7 @@ export default function CompaniesView({ jobs = [], onSelectCompany, user }) {
             location: job.location || 'Remote',
             size: 'Growing Enterprise',
             verified: true,
-            description: `Active recruiting partner active on TalentBridge offering innovative tech opportunities.`,
+            description: `Active recruiting partner offering innovative tech opportunities.`,
             perks: ['Growth Stage', 'Competitive Compensation']
           });
         }
