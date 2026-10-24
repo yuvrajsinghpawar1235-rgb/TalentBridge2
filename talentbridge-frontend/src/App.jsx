@@ -30,7 +30,16 @@ export default function App() {
   const [isLoadingJobs, setIsLoadingJobs] = useState(true);
   const [fetchError, setFetchError] = useState(null);
 
-  const [savedJobs, setSavedJobs] = useState([]);
+  // 1. PERSIST SAVED JOBS IN LOCAL STORAGE
+  const [savedJobs, setSavedJobs] = useState(() => {
+    try {
+      const stored = localStorage.getItem('savedJobs');
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
+
   const [activeTab, setActiveTab] = useState('landing');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -50,6 +59,11 @@ export default function App() {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('theme', theme);
   }, [theme]);
+
+  // Sync savedJobs with localStorage
+  useEffect(() => {
+    localStorage.setItem('savedJobs', JSON.stringify(savedJobs));
+  }, [savedJobs]);
 
   const toggleTheme = () => {
     const nextTheme = theme === 'light' ? 'dark' : 'light';
@@ -112,6 +126,12 @@ export default function App() {
   };
 
   const handleToggleSaveJob = (jobToSave) => {
+    if (!user) {
+      addToast('Please sign in or register to bookmark job opportunities!', 'info');
+      openAuthForRole('CANDIDATE', true);
+      return;
+    }
+
     setSavedJobs((prev) => {
       const exists = prev.some((j) => j.id === jobToSave.id);
       if (exists) {
@@ -122,6 +142,41 @@ export default function App() {
         return [...prev, jobToSave];
       }
     });
+  };
+
+  // Submit Application Handler
+  const handleApplyJob = async (job) => {
+    if (!user) {
+      addToast('Please sign in or register to submit job applications!', 'info');
+      openAuthForRole('CANDIDATE', true);
+      return;
+    }
+
+    const applicationPayload = {
+      jobId: job.id,
+      candidateId: user.id,
+      candidateName: user.name || user.email,
+      candidateEmail: user.email,
+      stage: 'APPLIED',
+      recruiterNotes: 'Application submitted successfully.'
+    };
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/applications`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(applicationPayload)
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to submit application');
+      }
+
+      addToast(`🎉 Application submitted for "${job.title}"!`, 'success');
+      if (selectedJob) setSelectedJob(null);
+    } catch (err) {
+      addToast(`Could not apply: ${err.message}`, 'error');
+    }
   };
 
   const filteredJobs = jobs.filter((job) =>
@@ -301,7 +356,7 @@ export default function App() {
         </main>
       )}
 
-      {/* JOBS FEED TAB WITH SKELETON LOADERS & ERROR BANNERS */}
+      {/* JOBS FEED TAB WITH UNIVERSAL SAVE & APPLY */}
       {activeTab === 'jobs' && (
         <main style={{ marginTop: '30px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
@@ -357,23 +412,24 @@ export default function App() {
                       </span>
                       <h4 style={{ margin: '4px 0 6px 0', color: 'var(--primary-accent)', fontSize: '18px' }}>{job.title}</h4>
                       <p style={{ margin: '0 0 10px 0', color: 'var(--text-secondary)', fontSize: '13px' }}>
-                        📍 {job.location} • 💼 {job.type} • 💰 {job.salaryRange}
+                        📍 {job.location || 'Remote'} • 💼 {job.type || 'Full-Time'} • 💰 {job.salaryRange || '$100k - $130k'}
                       </p>
                       <p style={{ margin: 0, fontSize: '14px', color: 'var(--text-primary)' }}>{job.description}</p>
                     </div>
 
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                      {user?.role === 'CANDIDATE' && (
-                        <button
-                          className="btn-secondary"
-                          onClick={() => handleToggleSaveJob(job)}
-                          style={{ fontSize: '12px', padding: '6px 12px', whiteSpace: 'nowrap' }}
-                        >
-                          {isSaved ? '⭐ Saved' : '☆ Save Job'}
-                        </button>
-                      )}
-                      <button className="btn-secondary" onClick={() => setSelectedJob(job)} style={{ fontSize: '12px', whiteSpace: 'nowrap' }}>
-                        View Details →
+                      {/* Universal Save Button */}
+                      <button
+                        className="btn-secondary"
+                        onClick={() => handleToggleSaveJob(job)}
+                        style={{ fontSize: '12px', padding: '6px 12px', whiteSpace: 'nowrap', color: isSaved ? '#f59e0b' : 'inherit' }}
+                      >
+                        {isSaved ? '⭐ Saved' : '☆ Save Job'}
+                      </button>
+
+                      {/* View & Apply Button */}
+                      <button className="btn-primary" onClick={() => setSelectedJob(job)} style={{ fontSize: '12px', whiteSpace: 'nowrap' }}>
+                        View Details & Apply →
                       </button>
                     </div>
                   </div>
@@ -413,12 +469,15 @@ export default function App() {
         }}
       />
 
+      {/* Updated JobDetailsModal passing isSaved and onToggleSave */}
       <JobDetailsModal
         job={selectedJob}
         isOpen={!!selectedJob}
         onClose={() => setSelectedJob(null)}
-        userRole={user?.role}
-        onApply={(job) => addToast(`Application submitted for ${job.title}!`, 'success')}
+        userRole={user?.role || 'CANDIDATE'}
+        isSaved={selectedJob ? savedJobs.some((j) => j.id === selectedJob.id) : false}
+        onToggleSave={handleToggleSaveJob}
+        onApply={handleApplyJob}
       />
 
       <ConfirmModal

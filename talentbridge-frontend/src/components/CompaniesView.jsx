@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-export default function CompaniesView({ jobs, onSelectCompany }) {
+export default function CompaniesView({ jobs = [], onSelectCompany }) {
   const [searchTerm, setSearchTerm] = useState('');
 
   // Sample verified partner companies
@@ -42,7 +42,7 @@ export default function CompaniesView({ jobs, onSelectCompany }) {
   return (
     <main style={{ marginTop: '30px' }}>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px', flexWrap: 'wrap', gap: '15px' }}>
         <div>
           <h2 style={{ margin: '0 0 6px 0', fontSize: '24px', color: 'var(--text-primary)' }}>Partner Companies</h2>
           <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '14px' }}>
@@ -62,9 +62,13 @@ export default function CompaniesView({ jobs, onSelectCompany }) {
       {/* Grid */}
       <div style={gridStyle}>
         {filteredCompanies.map((company) => {
-          const companyJobCount = jobs.filter(
-            (job) => job.companyName?.toLowerCase() === company.name.toLowerCase()
-          ).length;
+          // Flexible case-insensitive & substring matching for accurate active job counts
+          const companyJobCount = jobs.filter((job) => {
+            if (!job.companyName) return false;
+            const jName = job.companyName.toLowerCase();
+            const cName = company.name.toLowerCase();
+            return jName.includes(cName) || cName.includes(jName);
+          }).length;
 
           return (
             <div key={company.id} className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
