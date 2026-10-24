@@ -18,7 +18,8 @@ public class WebConfig {
                                 "http://localhost:5173",
                                 "http://localhost:3000",
                                 "https://talentbriddge2.netlify.app",
-                                "https://talentbridge-olive.vercel.app"
+                                "https://talentbridge-olive.vercel.app",
+                                "https://talentbridge2-git-main-yuvraj-419a.vercel.app" // <--- Added your active Vercel deployment URL
                         )
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                         .allowedHeaders("*")

@@ -37,6 +37,7 @@ public class SecurityConfig {
                 "http://localhost:3000",
                 "https://talentbridge-olive.vercel.app",
                 "https://talentbridge2-seven.vercel.app",
+                "https://talentbridge2-git-main-yuvraj-419a.vercel.app", // <--- Added your active Vercel deployment URL
                 "https://talentbriddge2.netlify.app"
         ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
