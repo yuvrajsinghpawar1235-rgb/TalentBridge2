@@ -2,10 +2,9 @@ import React, { useState, useEffect } from 'react';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://talentbridge2-5.onrender.com';
 
-export default function AdminDashboard({ jobs, onJobUpdated }) {
+export default function AdminDashboard({ jobs = [], onJobUpdated }) {
   const [activeTab, setActiveTab] = useState('overview');
 
-  // 1. DYNAMIC SYSTEM STATS & USERS STATE
   const [analytics, setAnalytics] = useState({
     totalUsers: 0,
     totalJobs: jobs.length,
@@ -95,7 +94,7 @@ export default function AdminDashboard({ jobs, onJobUpdated }) {
         <button onClick={() => setActiveTab('settings')} style={subnavTabStyle(activeTab === 'settings')}>⚙️ Reports / Settings</button>
       </div>
 
-      {/* 1. REAL-DATA SYSTEM OVERVIEW */}
+      {/* SYSTEM OVERVIEW TAB */}
       {activeTab === 'overview' && (
         <div>
           <div style={welcomeBannerStyle}>
@@ -112,7 +111,7 @@ export default function AdminDashboard({ jobs, onJobUpdated }) {
             <div className="card" style={{ borderTop: '4px solid var(--accent-purple)' }}>
               <span style={statLabelStyle}>Registered Users</span>
               <h3 style={statValueStyle}>{analytics.totalUsers || users.length}</h3>
-              <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Synced from Aiven MySQL DB</span>
+              <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Synced from MySQL DB</span>
             </div>
 
             <div className="card" style={{ borderTop: '4px solid var(--primary-accent)' }}>
@@ -138,7 +137,7 @@ export default function AdminDashboard({ jobs, onJobUpdated }) {
         </div>
       )}
 
-      {/* 2. USER MANAGEMENT TAB */}
+      {/* USER MANAGEMENT TAB */}
       {activeTab === 'users' && (
         <div className="card">
           <h3 style={{ margin: '0 0 16px 0', color: 'var(--text-primary)' }}>User Account Management</h3>
@@ -169,7 +168,7 @@ export default function AdminDashboard({ jobs, onJobUpdated }) {
         </div>
       )}
 
-      {/* 3. COMPANY MANAGEMENT TAB */}
+      {/* COMPANY MANAGEMENT TAB */}
       {activeTab === 'companies' && (
         <div className="card">
           <h3 style={{ margin: '0 0 16px 0', color: 'var(--text-primary)' }}>Employer & Company Verification</h3>
@@ -203,7 +202,7 @@ export default function AdminDashboard({ jobs, onJobUpdated }) {
         </div>
       )}
 
-      {/* 4. JOB MODERATION TAB */}
+      {/* JOB MODERATION TAB */}
       {activeTab === 'moderation' && (
         <div>
           <h3 style={{ marginBottom: '16px' }}>Job Moderation Queue ({moderationJobs.length})</h3>
@@ -245,7 +244,7 @@ export default function AdminDashboard({ jobs, onJobUpdated }) {
         </div>
       )}
 
-      {/* 5. CATEGORIES MANAGEMENT TAB */}
+      {/* CATEGORIES MANAGEMENT TAB */}
       {activeTab === 'categories' && (
         <div className="card">
           <h3 style={{ margin: '0 0 16px 0', color: 'var(--text-primary)' }}>Job Industry Categories</h3>
@@ -283,7 +282,7 @@ export default function AdminDashboard({ jobs, onJobUpdated }) {
         </div>
       )}
 
-      {/* 6. REPORTS / SETTINGS */}
+      {/* REPORTS / SETTINGS TAB */}
       {activeTab === 'settings' && (
         <div style={{ display: 'grid', gap: '20px' }}>
           <div className="card">
