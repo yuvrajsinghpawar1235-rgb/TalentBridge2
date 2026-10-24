@@ -74,7 +74,7 @@ export default function JobSearchControls({ jobs = [], onApplyJob, onToggleSaveJ
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 4;
 
-  // Use backend jobs if available, otherwise fallback to mock demo jobs
+  // Use backend jobs if available and non-empty, otherwise fallback to mock demo jobs
   const safeJobs = useMemo(() => {
     if (Array.isArray(jobs) && jobs.length > 0) {
       return jobs;
@@ -82,11 +82,12 @@ export default function JobSearchControls({ jobs = [], onApplyJob, onToggleSaveJ
     return MOCK_DEMO_JOBS;
   }, [jobs]);
 
-  // Filtering Logic (Flexible & Fallback-Safe)
+  // Filtering Logic (Resilient & Fallback-Safe)
   const filteredJobs = useMemo(() => {
     return safeJobs.filter((job) => {
       const searchTermLower = searchTerm.toLowerCase();
 
+      // Safe fallbacks for missing or variations in backend field names
       const title = (job.title || '').toLowerCase();
       const company = (job.companyName || job.company || '').toLowerCase();
       const location = (job.location || '').toLowerCase();
@@ -99,6 +100,7 @@ export default function JobSearchControls({ jobs = [], onApplyJob, onToggleSaveJ
         location.includes(searchTermLower) ||
         description.includes(searchTermLower);
 
+      // Flexible attribute matching with default values
       const jobType = job.type || job.jobType || 'Full-Time';
       const jobWorkplace = job.workplaceType || job.workplace || 'Remote';
       const jobExperience = job.experienceLevel || job.experience || 'Entry';
@@ -226,14 +228,14 @@ export default function JobSearchControls({ jobs = [], onApplyJob, onToggleSaveJ
               <div key={job.id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px' }}>
                 <div>
                   <div style={{ display: 'flex', gap: '8px', marginBottom: '6px' }}>
-                    <span style={badgeStyle}>{job.type || 'Full-Time'}</span>
+                    <span style={badgeStyle}>{job.type || job.jobType || 'Full-Time'}</span>
                     <span style={{ ...badgeStyle, backgroundColor: 'rgba(16, 185, 129, 0.15)', color: 'var(--accent-green)' }}>
-                      {job.workplaceType || 'Remote'}
+                      {job.workplaceType || job.workplace || 'Remote'}
                     </span>
                   </div>
                   <h4 style={{ margin: '0 0 4px 0', fontSize: '18px', color: 'var(--primary-accent)' }}>{job.title}</h4>
                   <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)' }}>
-                    🏢 {job.companyName || job.company || 'TalentBridge Partner'} • 📍 {job.location} • 💰 {job.salaryRange || '$100k - $120k'}
+                    🏢 {job.companyName || job.company || 'TalentBridge Partner'} • 📍 {job.location || 'Remote'} • 💰 {job.salaryRange || '$100k - $120k'}
                   </p>
                 </div>
 
@@ -299,6 +301,7 @@ export default function JobSearchControls({ jobs = [], onApplyJob, onToggleSaveJ
   );
 }
 
+// Helpers & Styles
 const labelStyle = { fontSize: '11px', fontWeight: 'bold', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' };
 const selectStyle = { width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)', fontSize: '13px', outline: 'none' };
 const badgeStyle = { backgroundColor: 'var(--badge-bg)', color: 'var(--primary-accent)', fontSize: '11px', fontWeight: 'bold', padding: '3px 8px', borderRadius: '10px' };

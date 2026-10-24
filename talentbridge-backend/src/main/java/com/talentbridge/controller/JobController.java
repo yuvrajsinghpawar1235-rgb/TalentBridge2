@@ -17,7 +17,8 @@ import java.util.Optional;
         "http://localhost:3000",
         "https://talentbriddge2.netlify.app",
         "https://talentbridge-olive.vercel.app",
-        "https://talentbridge2-seven.vercel.app"
+        "https://talentbridge2-seven.vercel.app",
+        "https://talentbridge2-git-main-yuvraj-419a.vercel.app" // <--- Added your active Vercel preview domain
 })
 public class JobController {
 

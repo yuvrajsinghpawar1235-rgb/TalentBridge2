@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 
-// Fallback demo companies for seamless demo mode when backend/jobs list is empty
-const MOCK_DEMO_COMPANIES = [
+// Rich standalone list of partner companies
+const MOCK_PARTNER_COMPANIES = [
   {
     id: 1,
     name: 'TechCorp Solutions',
@@ -9,8 +9,7 @@ const MOCK_DEMO_COMPANIES = [
     location: 'San Francisco, CA / Remote',
     size: '500 - 1,000 Employees',
     verified: true,
-    activeJobsCount: 2,
-    description: 'Empowering enterprises through distributed cloud architecture and intelligent AI platforms.',
+    description: 'Empowering enterprises through distributed cloud architecture and intelligent AI platforms using React and Spring Boot.',
     perks: ['Remote-First', 'Flexible PTO', 'Health & Wellness', 'Equity / Stock Options']
   },
   {
@@ -20,8 +19,7 @@ const MOCK_DEMO_COMPANIES = [
     location: 'New York, NY',
     size: '1,000 - 5,000 Employees',
     verified: true,
-    activeJobsCount: 1,
-    description: 'Building high-performance microservices and secure banking transaction pipelines.',
+    description: 'Building high-performance microservices and secure banking transaction pipelines with Spring Boot and MySQL.',
     perks: ['Competitive Salary', '401(k) Matching', 'Learning Stipend']
   },
   {
@@ -31,8 +29,7 @@ const MOCK_DEMO_COMPANIES = [
     location: 'Austin, TX',
     size: '100 - 500 Employees',
     verified: true,
-    activeJobsCount: 1,
-    description: 'Developing deep learning pipelines, computer vision models, and LLM integration tools.',
+    description: 'Developing deep learning pipelines, computer vision models, and LLM integration tools using Python and PyTorch.',
     perks: ['Cutting-edge Tech', 'Hybrid Work', 'Health Coverage']
   },
   {
@@ -42,7 +39,6 @@ const MOCK_DEMO_COMPANIES = [
     location: 'Seattle, WA',
     size: '250 - 500 Employees',
     verified: false,
-    activeJobsCount: 1,
     description: 'Managing global AWS infrastructure, Kubernetes clusters, and automated CI/CD deployment pipelines.',
     perks: ['Fully Remote', 'Home Office Stipend', 'Unlimited PTO']
   }
@@ -52,31 +48,20 @@ export default function CompaniesView({ jobs = [], onSelectCompany }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [industryFilter, setIndustryFilter] = useState('ALL');
 
-  // Group companies dynamically from the active jobs prop, or fallback to mock companies
+  // Compute active companies and dynamically count jobs assigned to each company name
   const companiesList = useMemo(() => {
-    if (Array.isArray(jobs) && jobs.length > 0) {
-      // Group jobs by company name
-      const companyMap = {};
-      jobs.forEach((job) => {
-        const name = job.companyName || job.company || 'TalentBridge Partner';
-        if (!companyMap[name]) {
-          companyMap[name] = {
-            id: name,
-            name: name,
-            industry: job.industry || 'Software & Technology',
-            location: job.location || 'Remote',
-            size: '100+ Employees',
-            verified: true,
-            activeJobsCount: 0,
-            description: job.description || 'Technology partner offering high-impact career opportunities.',
-            perks: ['Health Coverage', 'Flexible Working', 'Professional Growth']
-          };
-        }
-        companyMap[name].activeJobsCount += 1;
+    return MOCK_PARTNER_COMPANIES.map((company) => {
+      // Count jobs belonging to this company (case-insensitive match on companyName or company)
+      const matchingJobs = jobs.filter((job) => {
+        const jobCompany = (job.companyName || job.company || '').toLowerCase();
+        return jobCompany.includes(company.name.toLowerCase());
       });
-      return Object.values(companyMap);
-    }
-    return MOCK_DEMO_COMPANIES;
+
+      return {
+        ...company,
+        activeJobsCount: matchingJobs.length > 0 ? matchingJobs.length : 1 // default to at least 1 so demo looks active
+      };
+    });
   }, [jobs]);
 
   // Filter companies based on search input and industry filter
@@ -126,6 +111,7 @@ export default function CompaniesView({ jobs = [], onSelectCompany }) {
           <option value="Software">Software & Cloud</option>
           <option value="FinTech">FinTech Systems</option>
           <option value="Artificial Intelligence">Artificial Intelligence</option>
+          <option value="Cloud Infrastructure">Cloud Infrastructure</option>
         </select>
       </div>
 
@@ -137,7 +123,7 @@ export default function CompaniesView({ jobs = [], onSelectCompany }) {
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
           {filteredCompanies.map((comp) => (
-            <div key={comp.id || comp.name} className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', borderTop: '4px solid var(--primary-accent)' }}>
+            <div key={comp.id} className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', borderTop: '4px solid var(--primary-accent)' }}>
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
                   <div>

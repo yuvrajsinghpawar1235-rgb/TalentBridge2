@@ -39,7 +39,6 @@ export default function CandidateDashboard({ jobs, user, savedJobs, onToggleSave
         .then(res => res.json())
         .then(data => {
           if (Array.isArray(data)) {
-            // Map or normalize fields if needed
             setApplications(data);
           }
         })
