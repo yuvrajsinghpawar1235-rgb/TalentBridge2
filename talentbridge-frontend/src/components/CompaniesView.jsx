@@ -51,7 +51,6 @@ export default function CompaniesView({ jobs = [], onSelectCompany }) {
   // Compute active companies and dynamically count jobs assigned to each company name
   const companiesList = useMemo(() => {
     return MOCK_PARTNER_COMPANIES.map((company) => {
-      // Count jobs belonging to this company (case-insensitive match on companyName or company)
       const matchingJobs = jobs.filter((job) => {
         const jobCompany = (job.companyName || job.company || '').toLowerCase();
         return jobCompany.includes(company.name.toLowerCase());
@@ -59,7 +58,7 @@ export default function CompaniesView({ jobs = [], onSelectCompany }) {
 
       return {
         ...company,
-        activeJobsCount: matchingJobs.length > 0 ? matchingJobs.length : 1 // default to at least 1 so demo looks active
+        activeJobsCount: matchingJobs.length > 0 ? matchingJobs.length : 1
       };
     });
   }, [jobs]);
@@ -145,7 +144,6 @@ export default function CompaniesView({ jobs = [], onSelectCompany }) {
                   {comp.description}
                 </p>
 
-                {/* Perks / Benefits */}
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '20px' }}>
                   {comp.perks?.map((perk, idx) => (
                     <span key={idx} style={perkBadgeStyle}>

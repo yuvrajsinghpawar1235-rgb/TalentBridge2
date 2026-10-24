@@ -84,6 +84,9 @@ export default function App() {
   const [isPostJobOpen, setIsPostJobOpen] = useState(false);
   const [selectedJob, setSelectedJob] = useState(null);
 
+  // Dedicated Company Filter State (Decoupled from generic search)
+  const [selectedCompanyFilter, setSelectedCompanyFilter] = useState(null);
+
   // Data, Loading, & Error States
   const [jobs, setJobs] = useState([]);
   const [isLoadingJobs, setIsLoadingJobs] = useState(true);
@@ -183,8 +186,10 @@ export default function App() {
     });
   };
 
+  // Structured Company Selection Handler
   const handleSelectCompanyJobs = (companyName) => {
-    setSearchTerm(companyName);
+    setSelectedCompanyFilter(companyName);
+    setSearchTerm('');
     setActiveTab('jobs');
   };
 
@@ -242,11 +247,23 @@ export default function App() {
     }
   };
 
-  const filteredJobs = activeJobs.filter((job) =>
-    (job.title?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-    (job.location?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-    (job.companyName?.toLowerCase() || '').includes(searchTerm.toLowerCase())
-  );
+  // State-Based Filter Logic
+  const filteredJobs = activeJobs.filter((job) => {
+    const jobCompany = (job.companyName || job.company || '').toLowerCase();
+
+    // 1. If a specific company is selected, strictly match company name
+    if (selectedCompanyFilter) {
+      return jobCompany.includes(selectedCompanyFilter.toLowerCase());
+    }
+
+    // 2. Otherwise apply general search input
+    if (!searchTerm) return true;
+    const term = searchTerm.toLowerCase();
+    const title = (job.title || '').toLowerCase();
+    const location = (job.location || '').toLowerCase();
+
+    return title.includes(term) || location.includes(term) || jobCompany.includes(term);
+  });
 
   return (
     <div className="container" style={{ paddingBottom: '60px' }}>
@@ -254,7 +271,7 @@ export default function App() {
       <header style={headerStyle}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
           <h1
-            onClick={() => setActiveTab('landing')}
+            onClick={() => { setActiveTab('landing'); setSelectedCompanyFilter(null); }}
             style={{ color: 'var(--text-primary)', margin: 0, fontSize: '22px', fontWeight: '800', cursor: 'pointer' }}
           >
             Talent<span style={{ color: 'var(--primary-accent)' }}>Bridge</span>
@@ -274,7 +291,6 @@ export default function App() {
               About / Help
             </span>
 
-            {/* Role-Exclusive Navigation Links */}
             {user?.role === 'CANDIDATE' && (
               <span onClick={() => setActiveTab('candidate')} style={{ ...navLinkStyle, color: activeTab === 'candidate' ? 'var(--primary-accent)' : 'var(--text-secondary)' }}>
                 👤 Candidate Dashboard
@@ -333,7 +349,6 @@ export default function App() {
             <h3 style={{ fontSize: '18px', marginBottom: '20px', textAlign: 'center' }}>Choose Your Role Workspace</h3>
 
             <div style={roleGridStyle}>
-              {/* Candidate Card */}
               <div className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', borderTop: '4px solid var(--primary-accent)' }}>
                 <div>
                   <div style={roleBadgeStyle('var(--primary-accent)', 'var(--badge-bg)')}>Job Seeker</div>
@@ -347,7 +362,6 @@ export default function App() {
                 </button>
               </div>
 
-              {/* Recruiter Card */}
               <div className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', borderTop: '4px solid var(--accent-green)' }}>
                 <div>
                   <div style={roleBadgeStyle('var(--accent-green)', 'rgba(16, 185, 129, 0.15)')}>Employer</div>
@@ -361,7 +375,6 @@ export default function App() {
                 </button>
               </div>
 
-              {/* Admin Card */}
               <div className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', borderTop: '4px solid var(--accent-purple)' }}>
                 <div>
                   <div style={roleBadgeStyle('var(--accent-purple)', 'rgba(168, 85, 247, 0.15)')}>Moderator</div>
@@ -379,7 +392,7 @@ export default function App() {
         </>
       )}
 
-      {/* COMPANIES TAB (Passes activeJobs instead of empty jobs) */}
+      {/* COMPANIES TAB */}
       {activeTab === 'companies' && (
         <CompaniesView jobs={activeJobs} onSelectCompany={handleSelectCompanyJobs} />
       )}
@@ -422,9 +435,29 @@ export default function App() {
       {/* JOBS FEED TAB WITH UNIVERSAL SAVE & APPLY */}
       {activeTab === 'jobs' && (
         <main style={{ marginTop: '30px' }}>
+          {/* Active Company Filter Notification Banner */}
+          {selectedCompanyFilter && (
+            <div className="card" style={{ padding: '12px 20px', marginBottom: '20px', backgroundColor: 'var(--badge-bg)', border: '1px solid var(--primary-accent)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '14px', color: 'var(--primary-accent)', fontWeight: 'bold' }}>
+                🏢 Showing jobs for: "{selectedCompanyFilter}"
+              </span>
+              <button
+                className="btn-secondary"
+                onClick={() => setSelectedCompanyFilter(null)}
+                style={{ fontSize: '12px', padding: '4px 10px' }}
+              >
+                Clear Company Filter ✕
+              </button>
+            </div>
+          )}
+
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
             <h3 style={{ margin: 0 }}>
-              {searchTerm ? `Jobs matching "${searchTerm}"` : 'Available Opportunities'} ({filteredJobs.length})
+              {selectedCompanyFilter
+                ? `Jobs at ${selectedCompanyFilter} (${filteredJobs.length})`
+                : searchTerm
+                ? `Jobs matching "${searchTerm}" (${filteredJobs.length})`
+                : `Available Opportunities (${filteredJobs.length})`}
             </h3>
             <div style={{ display: 'flex', gap: '10px' }}>
               {searchTerm && (
@@ -455,6 +488,11 @@ export default function App() {
           {!isLoadingJobs && filteredJobs.length === 0 && (
             <div className="card" style={{ textAlign: 'center', padding: '40px' }}>
               <p style={{ color: 'var(--text-secondary)', margin: 0 }}>No matching jobs found.</p>
+              {selectedCompanyFilter && (
+                <button className="btn-primary" onClick={() => setSelectedCompanyFilter(null)} style={{ marginTop: '15px', fontSize: '13px' }}>
+                  View All Companies & Jobs
+                </button>
+              )}
             </div>
           )}
 
@@ -466,7 +504,7 @@ export default function App() {
                   <div key={job.id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <div onClick={() => setSelectedJob(job)} style={{ cursor: 'pointer', flex: 1, paddingRight: '15px' }}>
                       <span style={{ fontSize: '12px', color: 'var(--accent-purple)', fontWeight: 'bold' }}>
-                        🏢 {job.companyName || 'TalentBridge Partner'}
+                        🏢 {job.companyName || job.company || 'TalentBridge Partner'}
                       </span>
                       <h4 style={{ margin: '4px 0 6px 0', color: 'var(--primary-accent)', fontSize: '18px' }}>{job.title}</h4>
                       <p style={{ margin: '0 0 10px 0', color: 'var(--text-secondary)', fontSize: '13px' }}>
@@ -476,7 +514,6 @@ export default function App() {
                     </div>
 
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                      {/* Universal Save Button */}
                       <button
                         className="btn-secondary"
                         onClick={() => handleToggleSaveJob(job)}
@@ -485,7 +522,6 @@ export default function App() {
                         {isSaved ? '⭐ Saved' : '☆ Save Job'}
                       </button>
 
-                      {/* View & Apply Button */}
                       <button className="btn-primary" onClick={() => setSelectedJob(job)} style={{ fontSize: '12px', whiteSpace: 'nowrap' }}>
                         View Details & Apply →
                       </button>
@@ -527,7 +563,6 @@ export default function App() {
         }}
       />
 
-      {/* JobDetailsModal with Save and Apply capability */}
       <JobDetailsModal
         job={selectedJob}
         isOpen={!!selectedJob}
