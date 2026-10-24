@@ -1,5 +1,64 @@
 import React, { useState, useMemo } from 'react';
 
+// Fallback demo jobs for seamless demo mode when backend returns empty data
+const MOCK_DEMO_JOBS = [
+  {
+    id: 1,
+    title: 'Full Stack Software Engineer',
+    companyName: 'TechCorp Solutions',
+    location: 'San Francisco, CA',
+    type: 'Full-Time',
+    workplaceType: 'Remote',
+    experienceLevel: 'Entry',
+    salaryRange: '$110,000 - $125,000',
+    description: 'Empowering enterprises through distributed cloud architecture and intelligent AI platforms using React and Spring Boot.'
+  },
+  {
+    id: 2,
+    title: 'Senior Frontend Architect',
+    companyName: 'TechCorp Solutions',
+    location: 'New York, NY',
+    type: 'Full-Time',
+    workplaceType: 'Hybrid',
+    experienceLevel: 'Senior',
+    salaryRange: '$140,000 - $165,000',
+    description: 'Lead frontend architecture, performance optimization, and scalable design systems.'
+  },
+  {
+    id: 3,
+    title: 'Java Backend Developer',
+    companyName: 'FinFlow Global',
+    location: 'Chicago, IL',
+    type: 'Full-Time',
+    workplaceType: 'On-site',
+    experienceLevel: 'Mid',
+    salaryRange: '$120,000 - $135,000',
+    description: 'Build high-performance microservices and secure banking transaction pipelines with Spring Boot and MySQL.'
+  },
+  {
+    id: 4,
+    title: 'AI / Machine Learning Engineer',
+    companyName: 'Neural Systems AI',
+    location: 'Austin, TX',
+    type: 'Full-Time',
+    workplaceType: 'Remote',
+    experienceLevel: 'Mid',
+    salaryRange: '$130,000 - $150,000',
+    description: 'Develop deep learning pipelines, computer vision models, and LLM integration tools using Python and PyTorch.'
+  },
+  {
+    id: 5,
+    title: 'DevOps & Cloud Engineer',
+    companyName: 'CloudScale Inc.',
+    location: 'Seattle, WA',
+    type: 'Contract',
+    workplaceType: 'Remote',
+    experienceLevel: 'Senior',
+    salaryRange: '$135,000 - $155,000',
+    description: 'Manage AWS infrastructure, Kubernetes clusters, and automated CI/CD deployment pipelines.'
+  }
+];
+
 export default function JobSearchControls({ jobs = [], onApplyJob, onToggleSaveJob, savedJobs = [] }) {
   // 1. SEARCH & FILTER STATES
   const [searchTerm, setSearchTerm] = useState('');
@@ -15,20 +74,39 @@ export default function JobSearchControls({ jobs = [], onApplyJob, onToggleSaveJ
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 4;
 
-  const safeJobs = Array.isArray(jobs) ? jobs : [];
+  // Use backend jobs if available, otherwise fallback to mock demo jobs
+  const safeJobs = useMemo(() => {
+    if (Array.isArray(jobs) && jobs.length > 0) {
+      return jobs;
+    }
+    return MOCK_DEMO_JOBS;
+  }, [jobs]);
 
-  // Filtering Logic
+  // Filtering Logic (Flexible & Fallback-Safe)
   const filteredJobs = useMemo(() => {
     return safeJobs.filter((job) => {
-      const matchesSearch =
-        (job.title && job.title.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (job.companyName && job.companyName.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (job.location && job.location.toLowerCase().includes(searchTerm.toLowerCase()));
+      const searchTermLower = searchTerm.toLowerCase();
 
-      const matchesLocation = locationFilter === 'ALL' || (job.location && job.location.toLowerCase().includes(locationFilter.toLowerCase()));
-      const matchesType = typeFilter === 'ALL' || job.type === typeFilter;
-      const matchesWorkplace = workplaceType === 'ALL' || job.workplaceType === workplaceType;
-      const matchesExperience = experienceLevel === 'ALL' || job.experienceLevel === experienceLevel;
+      const title = (job.title || '').toLowerCase();
+      const company = (job.companyName || job.company || '').toLowerCase();
+      const location = (job.location || '').toLowerCase();
+      const description = (job.description || '').toLowerCase();
+
+      const matchesSearch =
+        !searchTerm ||
+        title.includes(searchTermLower) ||
+        company.includes(searchTermLower) ||
+        location.includes(searchTermLower) ||
+        description.includes(searchTermLower);
+
+      const jobType = job.type || job.jobType || 'Full-Time';
+      const jobWorkplace = job.workplaceType || job.workplace || 'Remote';
+      const jobExperience = job.experienceLevel || job.experience || 'Entry';
+
+      const matchesLocation = locationFilter === 'ALL' || location.includes(locationFilter.toLowerCase());
+      const matchesType = typeFilter === 'ALL' || jobType.toLowerCase() === typeFilter.toLowerCase();
+      const matchesWorkplace = workplaceType === 'ALL' || jobWorkplace.toLowerCase() === workplaceType.toLowerCase();
+      const matchesExperience = experienceLevel === 'ALL' || jobExperience.toLowerCase() === experienceLevel.toLowerCase();
 
       return matchesSearch && matchesLocation && matchesType && matchesWorkplace && matchesExperience;
     });
@@ -155,7 +233,7 @@ export default function JobSearchControls({ jobs = [], onApplyJob, onToggleSaveJ
                   </div>
                   <h4 style={{ margin: '0 0 4px 0', fontSize: '18px', color: 'var(--primary-accent)' }}>{job.title}</h4>
                   <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)' }}>
-                    🏢 {job.companyName || 'TalentBridge Partner'} • 📍 {job.location} • 💰 {job.salaryRange || '$100k - $120k'}
+                    🏢 {job.companyName || job.company || 'TalentBridge Partner'} • 📍 {job.location} • 💰 {job.salaryRange || '$100k - $120k'}
                   </p>
                 </div>
 

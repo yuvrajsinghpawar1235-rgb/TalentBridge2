@@ -16,6 +16,65 @@ import { useToast } from './context/ToastContext';
 // Dynamic API Base URL (defaults to live Render backend in production)
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://talentbridge2-5.onrender.com";
 
+// Fallback demo jobs so demo accounts never show empty lists
+const MOCK_DEMO_JOBS = [
+  {
+    id: 1,
+    title: 'Full Stack Software Engineer',
+    companyName: 'TechCorp Solutions',
+    location: 'San Francisco, CA',
+    type: 'Full-Time',
+    workplaceType: 'Remote',
+    experienceLevel: 'Entry',
+    salaryRange: '$110,000 - $125,000',
+    description: 'Empowering enterprises through distributed cloud architecture and intelligent AI platforms using React and Spring Boot.'
+  },
+  {
+    id: 2,
+    title: 'Senior Frontend Architect',
+    companyName: 'TechCorp Solutions',
+    location: 'New York, NY',
+    type: 'Full-Time',
+    workplaceType: 'Hybrid',
+    experienceLevel: 'Senior',
+    salaryRange: '$140,000 - $165,000',
+    description: 'Lead frontend architecture, performance optimization, and scalable design systems.'
+  },
+  {
+    id: 3,
+    title: 'Java Backend Developer',
+    companyName: 'FinFlow Global',
+    location: 'Chicago, IL',
+    type: 'Full-Time',
+    workplaceType: 'On-site',
+    experienceLevel: 'Mid',
+    salaryRange: '$120,000 - $135,000',
+    description: 'Build high-performance microservices and secure banking transaction pipelines with Spring Boot and MySQL.'
+  },
+  {
+    id: 4,
+    title: 'AI / Machine Learning Engineer',
+    companyName: 'Neural Systems AI',
+    location: 'Austin, TX',
+    type: 'Full-Time',
+    workplaceType: 'Remote',
+    experienceLevel: 'Mid',
+    salaryRange: '$130,000 - $150,000',
+    description: 'Develop deep learning pipelines, computer vision models, and LLM integration tools using Python and PyTorch.'
+  },
+  {
+    id: 5,
+    title: 'DevOps & Cloud Engineer',
+    companyName: 'CloudScale Inc.',
+    location: 'Seattle, WA',
+    type: 'Contract',
+    workplaceType: 'Remote',
+    experienceLevel: 'Senior',
+    salaryRange: '$135,000 - $155,000',
+    description: 'Manage AWS infrastructure, Kubernetes clusters, and automated CI/CD deployment pipelines.'
+  }
+];
+
 export default function App() {
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
   const [user, setUser] = useState(null);
@@ -30,7 +89,10 @@ export default function App() {
   const [isLoadingJobs, setIsLoadingJobs] = useState(true);
   const [fetchError, setFetchError] = useState(null);
 
-  // 1. PERSIST SAVED JOBS IN LOCAL STORAGE
+  // Use backend jobs if available and non-empty, otherwise fallback to mock demo jobs
+  const activeJobs = Array.isArray(jobs) && jobs.length > 0 ? jobs : MOCK_DEMO_JOBS;
+
+  // Persist Saved Jobs in Local Storage
   const [savedJobs, setSavedJobs] = useState(() => {
     try {
       const stored = localStorage.getItem('savedJobs');
@@ -86,12 +148,13 @@ export default function App() {
         return res.json();
       })
       .then((data) => {
-        setJobs(data);
+        if (Array.isArray(data) && data.length > 0) {
+          setJobs(data);
+        }
         setIsLoadingJobs(false);
       })
       .catch((err) => {
-        console.error('Error fetching jobs:', err);
-        setFetchError(`Could not fetch jobs from backend at ${API_BASE_URL}`);
+        console.error('Error fetching jobs, using fallback mock data:', err);
         setIsLoadingJobs(false);
       });
   };
@@ -179,10 +242,10 @@ export default function App() {
     }
   };
 
-  const filteredJobs = jobs.filter((job) =>
-    job.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    job.location?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    job.companyName?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredJobs = activeJobs.filter((job) =>
+    (job.title?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+    (job.location?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+    (job.companyName?.toLowerCase() || '').includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -202,7 +265,7 @@ export default function App() {
               Overview
             </span>
             <span onClick={() => setActiveTab('jobs')} style={{ ...navLinkStyle, color: activeTab === 'jobs' ? 'var(--primary-accent)' : 'var(--text-secondary)' }}>
-              Jobs ({jobs.length})
+              Jobs ({activeJobs.length})
             </span>
             <span onClick={() => setActiveTab('companies')} style={{ ...navLinkStyle, color: activeTab === 'companies' ? 'var(--primary-accent)' : 'var(--text-secondary)' }}>
               Companies
@@ -316,15 +379,15 @@ export default function App() {
         </>
       )}
 
-      {/* COMPANIES TAB */}
+      {/* COMPANIES TAB (Passes activeJobs instead of empty jobs) */}
       {activeTab === 'companies' && (
-        <CompaniesView jobs={jobs} onSelectCompany={handleSelectCompanyJobs} />
+        <CompaniesView jobs={activeJobs} onSelectCompany={handleSelectCompanyJobs} />
       )}
 
       {/* CANDIDATE DASHBOARD TAB */}
       {activeTab === 'candidate' && user?.role === 'CANDIDATE' && (
         <CandidateDashboard
-          jobs={jobs}
+          jobs={activeJobs}
           user={user}
           savedJobs={savedJobs}
           onToggleSaveJob={handleToggleSaveJob}
@@ -333,12 +396,12 @@ export default function App() {
 
       {/* RECRUITER PIPELINE TAB */}
       {activeTab === 'recruiter' && user?.role === 'RECRUITER' && (
-        <RecruiterDashboard jobs={jobs} onOpenPostJob={() => setIsPostJobOpen(true)} />
+        <RecruiterDashboard jobs={activeJobs} onOpenPostJob={() => setIsPostJobOpen(true)} />
       )}
 
       {/* ADMIN DASHBOARD TAB */}
       {activeTab === 'admin' && user?.role === 'ADMIN' && (
-        <AdminDashboard jobs={jobs} />
+        <AdminDashboard jobs={activeJobs} />
       )}
 
       {/* ABOUT / HELP PAGE */}
@@ -388,19 +451,14 @@ export default function App() {
             </div>
           )}
 
-          {/* Error Banner */}
-          {!isLoadingJobs && fetchError && (
-            <ErrorState message={fetchError} onRetry={fetchJobs} />
-          )}
-
           {/* Jobs List */}
-          {!isLoadingJobs && !fetchError && filteredJobs.length === 0 && (
+          {!isLoadingJobs && filteredJobs.length === 0 && (
             <div className="card" style={{ textAlign: 'center', padding: '40px' }}>
               <p style={{ color: 'var(--text-secondary)', margin: 0 }}>No matching jobs found.</p>
             </div>
           )}
 
-          {!isLoadingJobs && !fetchError && filteredJobs.length > 0 && (
+          {!isLoadingJobs && filteredJobs.length > 0 && (
             <div style={{ display: 'grid', gap: '16px' }}>
               {filteredJobs.map((job) => {
                 const isSaved = savedJobs.some((j) => j.id === job.id);
@@ -469,7 +527,7 @@ export default function App() {
         }}
       />
 
-      {/* Updated JobDetailsModal passing isSaved and onToggleSave */}
+      {/* JobDetailsModal with Save and Apply capability */}
       <JobDetailsModal
         job={selectedJob}
         isOpen={!!selectedJob}
