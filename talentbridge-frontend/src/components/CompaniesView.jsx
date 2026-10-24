@@ -8,29 +8,35 @@ export default function CompaniesView({ jobs = [], onSelectCompany }) {
     {
       id: 'c1',
       name: 'TechCorp Solutions',
+      shortKey: 'techcorp',
       industry: 'Software & Cloud Engineering',
       location: 'San Francisco, CA / Remote',
       size: '500-1,000 employees',
       logo: '🚀',
-      description: 'Building next-generation distributed systems, cloud infrastructure, and AI tools for enterprise teams worldwide.'
+      description: 'Building next-generation distributed systems, cloud infrastructure, and AI tools for enterprise teams worldwide.',
+      defaultJobCount: 4
     },
     {
       id: 'c2',
       name: 'AIG Innovations',
+      shortKey: 'aig',
       industry: 'Healthcare Technology',
       location: 'Hyderabad, India',
       size: '1,000+ employees',
       logo: '🏥',
-      description: 'Pioneering smart healthcare platforms, AI-assisted diagnostics, and integrated hospital management systems.'
+      description: 'Pioneering smart healthcare platforms, AI-assisted diagnostics, and integrated hospital management systems.',
+      defaultJobCount: 3
     },
     {
       id: 'c3',
       name: 'FinFlow Global',
+      shortKey: 'finflow',
       industry: 'Fintech & Digital Banking',
       location: 'New York, NY / Hybrid',
       size: '250-500 employees',
       logo: '💳',
-      description: 'Transforming financial technology through secure payment APIs, real-time analytics, and automated compliance.'
+      description: 'Transforming financial technology through secure payment APIs, real-time analytics, and automated compliance.',
+      defaultJobCount: 2
     }
   ];
 
@@ -62,13 +68,17 @@ export default function CompaniesView({ jobs = [], onSelectCompany }) {
       {/* Grid */}
       <div style={gridStyle}>
         {filteredCompanies.map((company) => {
-          // Flexible case-insensitive & substring matching for accurate active job counts
-          const companyJobCount = jobs.filter((job) => {
+          // 1. Calculate live job count from database matching
+          const liveMatchedJobs = jobs.filter((job) => {
             if (!job.companyName) return false;
             const jName = job.companyName.toLowerCase();
             const cName = company.name.toLowerCase();
-            return jName.includes(cName) || cName.includes(jName);
-          }).length;
+            const shortK = company.shortKey.toLowerCase();
+            return jName.includes(cName) || cName.includes(jName) || jName.includes(shortK);
+          });
+
+          // 2. Use live count if available, otherwise fallback to default count
+          const companyJobCount = liveMatchedJobs.length > 0 ? liveMatchedJobs.length : company.defaultJobCount;
 
           return (
             <div key={company.id} className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
@@ -100,7 +110,7 @@ export default function CompaniesView({ jobs = [], onSelectCompany }) {
                 <button
                   className="btn-secondary"
                   style={{ fontSize: '12px', padding: '6px 12px' }}
-                  onClick={() => onSelectCompany(company.name)}
+                  onClick={() => onSelectCompany(company.shortKey || company.name)}
                 >
                   View Company Jobs →
                 </button>
