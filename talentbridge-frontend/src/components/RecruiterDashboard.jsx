@@ -3,8 +3,8 @@ import { useToast } from '../context/ToastContext';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://talentbridge2-5.onrender.com";
 
-// Base demo applications map
-const DEMO_APPLICATIONS = [
+// Seeded applications ONLY for demo accounts
+const MOCK_DEMO_APPLICATIONS = [
   {
     id: 101,
     jobId: 1,
@@ -26,30 +26,20 @@ const DEMO_APPLICATIONS = [
     stage: 'INTERVIEW',
     appliedDate: '2026-10-18',
     notes: 'Technical interview scheduled for Tuesday.'
-  },
-  {
-    id: 103,
-    jobId: 3,
-    candidateName: 'Taylor Swift',
-    candidateEmail: 'taylor.s@example.com',
-    companyName: 'FinFlow Global',
-    jobTitle: 'Java Backend Developer',
-    stage: 'OFFER',
-    appliedDate: '2026-10-15',
-    notes: 'Offer letter generated.'
   }
 ];
 
-export default function RecruiterDashboard({ jobs = [], user, onOpenPostJob }) {
+export default function RecruiterDashboard({ jobs = [], user, onOpenPostJob, onUpdateRecruiterCompany }) {
   const [applications, setApplications] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeStageFilter, setActiveStageFilter] = useState('ALL');
+  const [isEditingCompany, setIsEditingCompany] = useState(false);
+  const [companyNameInput, setCompanyNameInput] = useState(user?.companyName || user?.company || 'My Organization');
   const { addToast } = useToast();
 
-  // Determine active recruiter company
-  const recruiterCompany = user?.companyName || user?.company || 'TechCorp Solutions';
+  const isDemoAccount = user?.email === 'recruiter@talentbridge.com' || user?.isDemo;
+  const recruiterCompany = user?.companyName || user?.company || companyNameInput;
 
-  // Fetch applications & filter strictly by recruiter company
   useEffect(() => {
     setIsLoading(true);
     fetch(`${API_BASE_URL}/api/applications`)
@@ -59,36 +49,46 @@ export default function RecruiterDashboard({ jobs = [], user, onOpenPostJob }) {
       })
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
-          // Filter strictly for this recruiter's company or candidate submissions
           const companyApps = data.filter(
             (app) => (app.companyName || '').toLowerCase() === recruiterCompany.toLowerCase()
           );
           setApplications(companyApps);
         } else {
-          // Fallback demo apps filtered strictly by recruiter company
-          const companyDemoApps = DEMO_APPLICATIONS.filter(
-            (app) => app.companyName.toLowerCase() === recruiterCompany.toLowerCase()
-          );
-          setApplications(companyDemoApps);
+          // Preseed ONLY if demo account
+          if (isDemoAccount) {
+            setApplications(MOCK_DEMO_APPLICATIONS);
+          } else {
+            setApplications([]);
+          }
         }
         setIsLoading(false);
       })
       .catch(() => {
-        // Fallback filtering on network error
-        const companyDemoApps = DEMO_APPLICATIONS.filter(
-          (app) => app.companyName.toLowerCase() === recruiterCompany.toLowerCase()
-        );
-        setApplications(companyDemoApps);
+        // Preseed ONLY if demo account on fallback
+        if (isDemoAccount) {
+          setApplications(MOCK_DEMO_APPLICATIONS);
+        } else {
+          setApplications([]);
+        }
         setIsLoading(false);
       });
-  }, [recruiterCompany]);
+  }, [recruiterCompany, isDemoAccount]);
 
-  // Filter posted jobs strictly for this recruiter's company
+  // Filter jobs matching this recruiter's company
   const myCompanyJobs = jobs.filter(
     (job) => (job.companyName || job.company || '').toLowerCase() === recruiterCompany.toLowerCase()
   );
 
-  // Update applicant stage handler
+  const handleSaveCompanyName = (e) => {
+    e.preventDefault();
+    if (!companyNameInput.trim()) return;
+    if (onUpdateRecruiterCompany) {
+      onUpdateRecruiterCompany(companyNameInput.trim());
+    }
+    setIsEditingCompany(false);
+    addToast(`Company name updated to "${companyNameInput.trim()}"`, 'success');
+  };
+
   const handleStageChange = (appId, newStage) => {
     setApplications((prev) =>
       prev.map((app) => (app.id === appId ? { ...app, stage: newStage } : app))
@@ -102,17 +102,37 @@ export default function RecruiterDashboard({ jobs = [], user, onOpenPostJob }) {
 
   return (
     <div style={{ marginTop: '20px' }}>
-      {/* Recruiter Workspace Header */}
+      {/* Header with Editable Company Name */}
       <div style={headerBannerStyle}>
         <div>
           <span style={roleBadgeStyle}>💼 Recruiter Workspace</span>
-          <h2 style={{ margin: '8px 0 4px 0', fontSize: '24px', color: 'var(--text-primary)' }}>
-            {recruiterCompany} Hiring Dashboard
-          </h2>
+
+          {isEditingCompany ? (
+            <form onSubmit={handleSaveCompanyName} style={{ display: 'flex', gap: '8px', margin: '8px 0' }}>
+              <input
+                type="text"
+                value={companyNameInput}
+                onChange={(e) => setCompanyNameInput(e.target.value)}
+                style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--border-color)', fontSize: '16px', outline: 'none' }}
+                autoFocus
+              />
+              <button type="submit" className="btn-primary" style={{ padding: '4px 12px', fontSize: '12px' }}>Save</button>
+              <button type="button" className="btn-secondary" onClick={() => setIsEditingCompany(false)} style={{ padding: '4px 12px', fontSize: '12px' }}>Cancel</button>
+            </form>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '8px 0 4px 0' }}>
+              <h2 style={{ margin: 0, fontSize: '24px', color: 'var(--text-primary)' }}>{recruiterCompany}</h2>
+              <button onClick={() => setIsEditingCompany(true)} className="btn-secondary" style={{ padding: '2px 8px', fontSize: '11px' }}>
+                ✏️ Edit Company Name
+              </button>
+            </div>
+          )}
+
           <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '14px' }}>
-            Manage active job listings and track candidate pipelines for {recruiterCompany}.
+            Manage job openings and applicant pipelines for {recruiterCompany}.
           </p>
         </div>
+
         <button className="btn-primary" onClick={onOpenPostJob} style={{ backgroundColor: 'var(--accent-green)', padding: '10px 18px' }}>
           + Post New Job Opportunity
         </button>
@@ -141,7 +161,6 @@ export default function RecruiterDashboard({ jobs = [], user, onOpenPostJob }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
           <h3 style={{ margin: 0 }}>Candidate Pipeline ({filteredApplications.length})</h3>
 
-          {/* Stage Filter Pills */}
           <div style={{ display: 'flex', gap: '8px' }}>
             {['ALL', 'APPLIED', 'SCREENING', 'INTERVIEW', 'OFFER', 'REJECTED'].map((stage) => (
               <button
@@ -168,8 +187,8 @@ export default function RecruiterDashboard({ jobs = [], user, onOpenPostJob }) {
           <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '20px' }}>Loading applicant pipeline...</p>
         ) : filteredApplications.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>
-            <p style={{ margin: 0, fontSize: '15px' }}>No candidates found in this pipeline stage.</p>
-            <p style={{ fontSize: '13px', marginTop: '6px' }}>New candidate applications submitted to {recruiterCompany} will automatically appear here.</p>
+            <p style={{ margin: 0, fontSize: '15px' }}>No candidate applications yet.</p>
+            <p style={{ fontSize: '13px', marginTop: '6px' }}>When job seekers apply to listings posted by {recruiterCompany}, their cards will appear here.</p>
           </div>
         ) : (
           <div style={{ display: 'grid', gap: '12px' }}>
@@ -183,14 +202,8 @@ export default function RecruiterDashboard({ jobs = [], user, onOpenPostJob }) {
                   <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-secondary)' }}>
                     ✉️ {app.candidateEmail} • 📅 Applied {app.appliedDate || 'Recently'}
                   </p>
-                  {app.notes && (
-                    <p style={{ margin: '8px 0 0 0', fontSize: '12px', color: 'var(--text-primary)', fontStyle: 'italic', backgroundColor: 'var(--bg-secondary)', padding: '6px 10px', borderRadius: '6px' }}>
-                      "{app.notes}"
-                    </p>
-                  )}
                 </div>
 
-                {/* Pipeline Stage Selector */}
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
                   <label style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>UPDATE STAGE</label>
                   <select
