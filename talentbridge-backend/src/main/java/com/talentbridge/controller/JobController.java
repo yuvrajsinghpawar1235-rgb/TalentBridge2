@@ -17,7 +17,10 @@ import java.util.Optional;
         origins = {
                 "http://localhost:5173",
                 "http://localhost:3000",
-                "https://talentbridge2-git-main-yuvraj-419a.vercel.app"
+                "https://talentbridge2-git-main-yuvraj-419a.vercel.app",
+                "https://talentbriddge2.netlify.app",
+                "https://talentbridge-olive.vercel.app",
+                "https://talentbridge2-seven.vercel.app"
         },
         allowedHeaders = "*",
         methods = {

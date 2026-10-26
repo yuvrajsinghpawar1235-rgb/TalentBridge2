@@ -29,29 +29,15 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('landing');
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Data Loading States
+  // Data Loading States (Pure Database State)
   const [jobs, setJobs] = useState([]);
   const [isLoadingJobs, setIsLoadingJobs] = useState(true);
 
   // Dynamic Notifications State
   const [userNotifications, setUserNotifications] = useState([]);
 
-  // Persist Custom Recruiter Postings Locally as fallback
-  const [customJobs, setCustomJobs] = useState(() => {
-    try {
-      const stored = localStorage.getItem('customPostedJobs');
-      return stored ? JSON.parse(stored) : [];
-    } catch {
-      return [];
-    }
-  });
-
-  useEffect(() => {
-    localStorage.setItem('customPostedJobs', JSON.stringify(customJobs));
-  }, [customJobs]);
-
-  // Priority Active Jobs: Strictly use live MySQL jobs if fetched; fallback to local custom jobs if zero backend data
-  const activeJobs = jobs.length > 0 ? jobs : customJobs;
+  // Active Jobs strictly bound to MySQL database response
+  const activeJobs = jobs;
 
   // Saved Bookmarks Persistence
   const [savedJobs, setSavedJobs] = useState(() => {
@@ -106,16 +92,19 @@ export default function App() {
       .then((data) => {
         if (Array.isArray(data)) {
           setJobs(data);
+        } else {
+          setJobs([]);
         }
         setIsLoadingJobs(false);
       })
       .catch((err) => {
-        console.warn('Backend job fetch failed, using local fallback:', err);
+        console.warn('Backend job fetch failed:', err);
+        setJobs([]);
         setIsLoadingJobs(false);
       });
   };
 
-  // Fetch candidate applications to build real dynamic notifications for HeaderProfileMenu
+  // Fetch candidate applications to build dynamic notifications
   useEffect(() => {
     if (user && user.id && user.role === 'CANDIDATE') {
       fetch(`${API_BASE_URL}/api/applications/candidate/${user.id}`)
@@ -125,7 +114,7 @@ export default function App() {
             const dynamicNotifs = data.map((app, i) => ({
               id: app.id || i + 1,
               title: `Application Status: ${app.stage || 'APPLIED'}`,
-              message: `Your application status for Job #${app.jobId} is currently ${app.stage || 'APPLIED'}.`,
+              message: `Your application for Job #${app.jobId} is currently ${app.stage || 'APPLIED'}.`,
               time: app.appliedAt ? new Date(app.appliedAt).toLocaleDateString() : 'Recent',
               unread: app.stage === 'OFFER' || app.stage === 'INTERVIEW'
             }));
@@ -135,7 +124,7 @@ export default function App() {
               {
                 id: 1,
                 title: 'Welcome to TalentBridge!',
-                message: 'Your candidate account is fully active and ready.',
+                message: 'Your candidate account is fully active.',
                 time: 'Just now',
                 unread: true
               }
@@ -143,15 +132,7 @@ export default function App() {
           }
         })
         .catch(() => {
-          setUserNotifications([
-            {
-              id: 1,
-              title: 'Welcome to TalentBridge!',
-              message: 'Your candidate account is active.',
-              time: 'Just now',
-              unread: false
-            }
-          ]);
+          setUserNotifications([]);
         });
     }
   }, [user]);
@@ -205,7 +186,7 @@ export default function App() {
     });
   };
 
-  // Multi-Field Job Filter over live database jobs
+  // Multi-Field Job Filter over database jobs
   const filteredJobs = activeJobs.filter((job) => {
     const jobCompany = (job.companyName || job.company || job.company_name || '').toLowerCase();
 
@@ -427,7 +408,8 @@ export default function App() {
 
           {!isLoadingJobs && filteredJobs.length === 0 && (
             <div className="card" style={{ textAlign: 'center', padding: '40px' }}>
-              <p style={{ color: 'var(--text-secondary)', margin: 0 }}>No matching jobs found.</p>
+              <p style={{ color: 'var(--text-secondary)', margin: 0 }}>No active job listings found in the database.</p>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '6px' }}>Sign in as a recruiter to post new opportunities!</p>
             </div>
           )}
 
@@ -435,7 +417,7 @@ export default function App() {
             <div style={{ display: 'grid', gap: '16px' }}>
               {filteredJobs.map((job, idx) => {
                 const isSaved = savedJobs.some((j) => j.id === job.id);
-                const compName = job.companyName || job.company || job.company_name || 'TalentBridge Partner';
+                const compName = job.companyName || job.company || job.company_name || 'Partner Company';
 
                 return (
                   <div key={job.id || idx} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -445,7 +427,7 @@ export default function App() {
                       </span>
                       <h4 style={{ margin: '4px 0 6px 0', color: 'var(--primary-accent)', fontSize: '18px' }}>{job.title}</h4>
                       <p style={{ margin: '0 0 10px 0', color: 'var(--text-secondary)', fontSize: '13px' }}>
-                        📍 {job.location || 'Remote'} • 💼 {job.type || 'Full-Time'} • 💰 {job.salaryRange || '$110k - $130k'}
+                        📍 {job.location || 'Remote'} • 💼 {job.type || 'Full-Time'} • 💰 {job.salaryRange || 'Competitive'}
                       </p>
                       <p style={{ margin: 0, fontSize: '14px', color: 'var(--text-primary)' }}>{job.description}</p>
                     </div>
@@ -490,9 +472,9 @@ export default function App() {
         isOpen={isPostJobOpen}
         user={user}
         onClose={() => setIsPostJobOpen(false)}
-        onJobPosted={(newJobPayload) => {
+        onJobPosted={() => {
           fetchJobs();
-          addToast('🎉 New job opportunity published successfully!', 'success');
+          addToast('🎉 New job opportunity published successfully to the database!', 'success');
         }}
       />
 
