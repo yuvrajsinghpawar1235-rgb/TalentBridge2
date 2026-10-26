@@ -15,42 +15,6 @@ import { useToast } from './context/ToastContext';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://talentbridge2-5.onrender.com";
 
-const MOCK_DEMO_JOBS = [
-  {
-    id: 1,
-    title: 'Full Stack Java Developer',
-    companyName: 'TechCorp Solutions',
-    location: 'Remote',
-    type: 'Full-time',
-    workplaceType: 'Remote',
-    experienceLevel: 'Mid',
-    salaryRange: '$120,000 - $145,000',
-    description: 'Looking for a strong developer proficient in Spring Boot, React, and MySQL to build scalable enterprise modules.'
-  },
-  {
-    id: 2,
-    title: 'React Frontend Architect',
-    companyName: 'TechCorp Solutions',
-    location: 'Remote',
-    type: 'Contract',
-    workplaceType: 'Remote',
-    experienceLevel: 'Senior',
-    salaryRange: '$110,000 - $130,000',
-    description: 'Lead frontend development using modern React, state management, and Tailwind CSS component systems.'
-  },
-  {
-    id: 3,
-    title: 'Backend Engineer',
-    companyName: 'FinFlow Global',
-    location: 'New York, NY',
-    type: 'Full-time',
-    workplaceType: 'Hybrid',
-    experienceLevel: 'Mid',
-    salaryRange: '$130,000 - $150,000',
-    description: 'Build robust financial microservices using Spring Boot and high-throughput MySQL pipelines.'
-  }
-];
-
 export default function App() {
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
   const [user, setUser] = useState(null);
@@ -69,7 +33,10 @@ export default function App() {
   const [jobs, setJobs] = useState([]);
   const [isLoadingJobs, setIsLoadingJobs] = useState(true);
 
-  // Persist Custom Recruiter Postings Locally to prevent 0-job wipeouts
+  // Dynamic Notifications State
+  const [userNotifications, setUserNotifications] = useState([]);
+
+  // Persist Custom Recruiter Postings Locally as fallback
   const [customJobs, setCustomJobs] = useState(() => {
     try {
       const stored = localStorage.getItem('customPostedJobs');
@@ -83,11 +50,8 @@ export default function App() {
     localStorage.setItem('customPostedJobs', JSON.stringify(customJobs));
   }, [customJobs]);
 
-  // Combined Active Jobs List
-  const activeJobs = [
-    ...customJobs,
-    ...(Array.isArray(jobs) && jobs.length > 0 ? jobs : MOCK_DEMO_JOBS)
-  ];
+  // Priority Active Jobs: Strictly use live MySQL jobs if fetched; fallback to local custom jobs if zero backend data
+  const activeJobs = jobs.length > 0 ? jobs : customJobs;
 
   // Saved Bookmarks Persistence
   const [savedJobs, setSavedJobs] = useState(() => {
@@ -131,6 +95,7 @@ export default function App() {
     setIsAuthOpen(true);
   };
 
+  // Fetch jobs strictly from MySQL Database
   const fetchJobs = () => {
     setIsLoadingJobs(true);
     fetch(`${API_BASE_URL}/api/jobs`)
@@ -139,16 +104,57 @@ export default function App() {
         return res.json();
       })
       .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           setJobs(data);
         }
         setIsLoadingJobs(false);
       })
       .catch((err) => {
-        console.warn('Backend fetch fallback active:', err);
+        console.warn('Backend job fetch failed, using local fallback:', err);
         setIsLoadingJobs(false);
       });
   };
+
+  // Fetch candidate applications to build real dynamic notifications for HeaderProfileMenu
+  useEffect(() => {
+    if (user && user.id && user.role === 'CANDIDATE') {
+      fetch(`${API_BASE_URL}/api/applications/candidate/${user.id}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (Array.isArray(data) && data.length > 0) {
+            const dynamicNotifs = data.map((app, i) => ({
+              id: app.id || i + 1,
+              title: `Application Status: ${app.stage || 'APPLIED'}`,
+              message: `Your application status for Job #${app.jobId} is currently ${app.stage || 'APPLIED'}.`,
+              time: app.appliedAt ? new Date(app.appliedAt).toLocaleDateString() : 'Recent',
+              unread: app.stage === 'OFFER' || app.stage === 'INTERVIEW'
+            }));
+            setUserNotifications(dynamicNotifs);
+          } else {
+            setUserNotifications([
+              {
+                id: 1,
+                title: 'Welcome to TalentBridge!',
+                message: 'Your candidate account is fully active and ready.',
+                time: 'Just now',
+                unread: true
+              }
+            ]);
+          }
+        })
+        .catch(() => {
+          setUserNotifications([
+            {
+              id: 1,
+              title: 'Welcome to TalentBridge!',
+              message: 'Your candidate account is active.',
+              time: 'Just now',
+              unread: false
+            }
+          ]);
+        });
+    }
+  }, [user]);
 
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
@@ -199,7 +205,7 @@ export default function App() {
     });
   };
 
-  // Bulletproof Multi-Field Job Filter
+  // Multi-Field Job Filter over live database jobs
   const filteredJobs = activeJobs.filter((job) => {
     const jobCompany = (job.companyName || job.company || job.company_name || '').toLowerCase();
 
@@ -273,6 +279,7 @@ export default function App() {
           {user ? (
             <HeaderProfileMenu
               user={user}
+              notifications={userNotifications}
               onLogout={handleLogout}
               onNavigate={(tab) => setActiveTab(tab)}
             />
@@ -428,7 +435,7 @@ export default function App() {
             <div style={{ display: 'grid', gap: '16px' }}>
               {filteredJobs.map((job, idx) => {
                 const isSaved = savedJobs.some((j) => j.id === job.id);
-                const compName = job.companyName || job.company || job.company_name || 'TechCorp Solutions';
+                const compName = job.companyName || job.company || job.company_name || 'TalentBridge Partner';
 
                 return (
                   <div key={job.id || idx} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -484,14 +491,6 @@ export default function App() {
         user={user}
         onClose={() => setIsPostJobOpen(false)}
         onJobPosted={(newJobPayload) => {
-          const newJobWithId = {
-            id: Date.now(),
-            ...newJobPayload,
-            companyName: newJobPayload.companyName || user?.companyName || user?.company || 'My Organization',
-            status: 'Active',
-            postedDate: new Date().toISOString().split('T')[0]
-          };
-          setCustomJobs((prev) => [newJobWithId, ...prev]);
           fetchJobs();
           addToast('🎉 New job opportunity published successfully!', 'success');
         }}

@@ -1,19 +1,15 @@
 import React, { useState } from 'react';
 
-export default function HeaderProfileMenu({ user, onLogout, onNavigate }) {
+export default function HeaderProfileMenu({ user, onLogout, onNavigate, notifications = [] }) {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
 
-  const [notifications, setNotifications] = useState([
-    { id: 1, title: 'Interview Scheduled', message: 'Your video interview with TechCorp is set for Friday.', time: '10m ago', unread: true },
-    { id: 2, title: 'Application Updated', message: 'Status moved to Screening stage.', time: '1h ago', unread: true }
-  ]);
+  // Use passed notifications or default welcome state
+  const displayNotifications = notifications.length > 0 ? notifications : [
+    { id: 1, title: 'Welcome to TalentBridge!', message: 'Your account is active and ready.', time: 'Just now', unread: true }
+  ];
 
-  const unreadCount = notifications.filter(n => n.unread).length;
-
-  const markAllRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, unread: false })));
-  };
+  const unreadCount = displayNotifications.filter(n => n.unread !== false).length;
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', position: 'relative' }}>
@@ -31,16 +27,14 @@ export default function HeaderProfileMenu({ user, onLogout, onNavigate }) {
           <div style={dropdownStyle}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
               <strong style={{ fontSize: '13px' }}>Notifications</strong>
-              <button onClick={markAllRead} style={{ background: 'none', border: 'none', color: 'var(--primary-accent)', fontSize: '11px', cursor: 'pointer' }}>
-                Mark read
-              </button>
+              <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{displayNotifications.length} updates</span>
             </div>
             <hr style={{ borderColor: 'var(--border-color)', margin: '0 0 10px 0' }} />
-            {notifications.map(n => (
-              <div key={n.id} style={{ padding: '8px', borderRadius: '6px', backgroundColor: n.unread ? 'var(--bg-secondary)' : 'transparent', marginBottom: '6px' }}>
+            {displayNotifications.map((n, index) => (
+              <div key={n.id || index} style={{ padding: '8px', borderRadius: '6px', backgroundColor: n.unread !== false ? 'var(--bg-secondary)' : 'transparent', marginBottom: '6px' }}>
                 <strong style={{ fontSize: '12px', color: 'var(--primary-accent)', display: 'block' }}>{n.title}</strong>
-                <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: 'var(--text-secondary)' }}>{n.message}</p>
-                <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>{n.time}</span>
+                <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: 'var(--text-secondary)' }}>{n.message || n.text}</p>
+                <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>{n.time || n.date}</span>
               </div>
             ))}
           </div>

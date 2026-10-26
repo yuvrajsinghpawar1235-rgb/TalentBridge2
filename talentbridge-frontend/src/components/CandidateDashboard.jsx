@@ -5,16 +5,16 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://talentbridge2
 export default function CandidateDashboard({ jobs, user, savedJobs, onToggleSaveJob }) {
   const [activeTab, setActiveTab] = useState('dashboard');
 
-  // 1. PROFILE STATE
+  // 1. PROFILE STATE (Synced directly with logged-in user props)
   const [profile, setProfile] = useState({
-    name: user?.name || 'Alex Morgan',
-    email: user?.email || 'alex.morgan@example.com',
-    title: 'Full Stack Software Engineer',
-    university: 'B.Tech in Computer Science',
-    isFresher: true,
-    latestExperience: 'Open Source Contributor & Projects',
-    bio: 'Passionate computer science graduate experienced in React, Spring Boot, Python, and cloud deployments.',
-    skills: ['React', 'JavaScript', 'Spring Boot', 'Python', 'MySQL', 'Git']
+    name: user?.name || 'Job Seeker',
+    email: user?.email || 'user@talentbridge.app',
+    title: user?.title || 'Full Stack Software Engineer',
+    university: user?.university || 'B.Tech in Computer Science',
+    isFresher: user?.isFresher ?? true,
+    latestExperience: user?.latestExperience || 'Open Source Contributor & Projects',
+    bio: user?.bio || 'Passionate computer science graduate experienced in React, Spring Boot, Python, and cloud deployments.',
+    skills: user?.skills || ['React', 'JavaScript', 'Spring Boot', 'Python', 'MySQL', 'Git']
   });
 
   const [newSkillInput, setNewSkillInput] = useState('');
@@ -22,7 +22,7 @@ export default function CandidateDashboard({ jobs, user, savedJobs, onToggleSave
 
   // 2. RESUME STATE
   const [resumeFile, setResumeFile] = useState({
-    name: 'Alex_Morgan_Resume_2026.pdf',
+    name: `${(user?.name || 'Candidate').replace(/\s+/g, '_')}_Resume_2026.pdf`,
     size: '245 KB',
     updatedAt: 'Oct 2026'
   });
@@ -49,10 +49,23 @@ export default function CandidateDashboard({ jobs, user, savedJobs, onToggleSave
   // 4. INTERVIEWS STATE
   const [activeInterviewRoom, setActiveInterviewRoom] = useState(null);
 
-  // 5. NOTIFICATIONS STATE
-  const [notifications, setNotifications] = useState([
-    { id: 1, title: 'Welcome to TalentBridge!', text: 'Your candidate account is fully active and ready.', date: 'Just now', read: false }
-  ]);
+  // 5. DYNAMIC NOTIFICATIONS STATE (Built directly from real applications & milestones)
+  const notifications = [
+    {
+      id: 0,
+      title: 'Welcome to TalentBridge!',
+      text: `Your candidate workspace is active for ${profile.name}.`,
+      date: 'Account Active',
+      read: true
+    },
+    ...applications.map((app, index) => ({
+      id: app.id || index + 1,
+      title: `Application Status: ${app.stage || 'APPLIED'}`,
+      text: `Your application for Job #${app.jobId} is currently in the ${app.stage || 'APPLIED'} stage.`,
+      date: app.appliedAt ? new Date(app.appliedAt).toLocaleDateString() : 'Recent',
+      read: app.stage !== 'OFFER' && app.stage !== 'INTERVIEW'
+    }))
+  ];
 
   // Skill Handlers
   const handleAddSkill = () => {
@@ -321,7 +334,7 @@ export default function CandidateDashboard({ jobs, user, savedJobs, onToggleSave
               {applications.map((app) => (
                 <div key={app.id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
-                    <span style={stageBadgeStyle(app.stage)}>{app.stage.replace('_', ' ')}</span>
+                    <span style={stageBadgeStyle(app.stage)}>{app.stage ? app.stage.replace('_', ' ') : 'APPLIED'}</span>
                     <h4 style={{ margin: '6px 0 4px 0', fontSize: '18px', color: 'var(--text-primary)' }}>Application #{app.id}</h4>
                     <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)' }}>
                       Job ID: {app.jobId} • Applied on {app.appliedAt ? new Date(app.appliedAt).toLocaleDateString() : 'Recent'}
@@ -348,7 +361,7 @@ export default function CandidateDashboard({ jobs, user, savedJobs, onToggleSave
               <div style={{ ...modalStyle, width: '540px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px' }}>
                   <div>
-                    <span style={stageBadgeStyle(selectedApp.stage)}>{selectedApp.stage.replace('_', ' ')}</span>
+                    <span style={stageBadgeStyle(selectedApp.stage)}>{selectedApp.stage ? selectedApp.stage.replace('_', ' ') : 'APPLIED'}</span>
                     <h3 style={{ margin: '6px 0 2px 0', color: 'var(--primary-accent)' }}>Application #{selectedApp.id}</h3>
                     <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '13px' }}>Candidate ID: {selectedApp.candidateId}</p>
                   </div>
