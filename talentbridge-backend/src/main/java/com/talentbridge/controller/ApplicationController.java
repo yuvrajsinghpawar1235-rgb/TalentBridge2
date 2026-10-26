@@ -3,6 +3,7 @@ package com.talentbridge.controller;
 import com.talentbridge.entity.Application;
 import com.talentbridge.repository.ApplicationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -39,8 +40,13 @@ public class ApplicationController {
     }
 
     @PostMapping
-    public Application createApplication(@RequestBody Application application) {
-        return applicationRepository.save(application);
+    public ResponseEntity<Application> createApplication(@RequestBody Application application) {
+        try {
+            Application savedApp = applicationRepository.save(application);
+            return new ResponseEntity<>(savedApp, HttpStatus.CREATED);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     @PutMapping("/{id}/stage")
@@ -48,7 +54,9 @@ public class ApplicationController {
         Optional<Application> optionalApp = applicationRepository.findById(id);
         if (optionalApp.isPresent()) {
             Application app = optionalApp.get();
-            app.setStage(updatedDetails.getStage());
+            if (updatedDetails.getStage() != null) {
+                app.setStage(updatedDetails.getStage());
+            }
             if (updatedDetails.getRecruiterNotes() != null) {
                 app.setRecruiterNotes(updatedDetails.getRecruiterNotes());
             }

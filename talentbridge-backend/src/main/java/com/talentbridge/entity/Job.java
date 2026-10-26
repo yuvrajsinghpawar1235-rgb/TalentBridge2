@@ -17,14 +17,14 @@ public class Job {
     private String description;
 
     private String location;
-    private String type;             // e.g., Full-Time, Part-Time, Contract
+    private String type;             // e.g., Full-time, Part-time, Contract
     private String workplaceType;    // e.g., Remote, On-site, Hybrid
     private String experienceLevel;  // e.g., Entry, Mid, Senior
     private Double salaryMin;
     private String salaryRange;
 
     private String companyName;
-    private Long companyId;          // Link to company entity/ID
+    private Long companyId;
 
     @Column(length = 1000)
     private String companyDescription;
@@ -37,8 +37,8 @@ public class Job {
 
     private String status;           // Active, Closed
     private String postedDate;
-    private LocalDateTime deadline;  // Application deadline (Datetime/Timestamp)
-    private String employmentType;   // Employment type alias
+    private LocalDateTime deadline;  // Application deadline
+    private String employmentType;
 
     // Default Constructor
     public Job() {}

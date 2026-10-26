@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -54,10 +55,17 @@ public class JobController {
         }
     }
 
-    // 3. CREATE / POST NEW JOB (Recruiter Workspace)
+    // 3. CREATE / POST NEW JOB
     @PostMapping
     public ResponseEntity<Job> createJob(@RequestBody Job job) {
         try {
+            if (job.getStatus() == null || job.getStatus().trim().isEmpty()) {
+                job.setStatus("Active");
+            }
+            if (job.getPostedDate() == null || job.getPostedDate().trim().isEmpty()) {
+                job.setPostedDate(LocalDate.now().toString());
+            }
+
             Job savedJob = jobRepository.save(job);
             return new ResponseEntity<>(savedJob, HttpStatus.CREATED);
         } catch (Exception e) {

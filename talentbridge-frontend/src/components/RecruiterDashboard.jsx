@@ -56,20 +56,12 @@ export default function RecruiterDashboard({ jobs = [], user, onOpenPostJob, onU
           );
           setApplications(companyApps);
         } else {
-          if (isDemoAccount) {
-            setApplications(MOCK_DEMO_APPLICATIONS);
-          } else {
-            setApplications([]);
-          }
+          setApplications(isDemoAccount ? MOCK_DEMO_APPLICATIONS : []);
         }
         setIsLoading(false);
       })
       .catch(() => {
-        if (isDemoAccount) {
-          setApplications(MOCK_DEMO_APPLICATIONS);
-        } else {
-          setApplications([]);
-        }
+        setApplications(isDemoAccount ? MOCK_DEMO_APPLICATIONS : []);
         setIsLoading(false);
       });
   }, [recruiterCompany, isDemoAccount]);
@@ -90,7 +82,6 @@ export default function RecruiterDashboard({ jobs = [], user, onOpenPostJob, onU
   };
 
   const handleCompanyRegistered = (newCompany) => {
-    // Save to local storage for persistence across views
     try {
       const stored = localStorage.getItem('registeredCompanies');
       const existing = stored ? JSON.parse(stored) : [];
@@ -105,11 +96,27 @@ export default function RecruiterDashboard({ jobs = [], user, onOpenPostJob, onU
     setCompanyNameInput(newCompany.name);
   };
 
-  const handleStageChange = (appId, newStage) => {
+  const handleStageChange = async (appId, newStage) => {
+    // Optimistic UI update
     setApplications((prev) =>
       prev.map((app) => (app.id === appId ? { ...app, stage: newStage } : app))
     );
-    addToast(`Candidate stage updated to "${newStage}"`, 'info');
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/applications/${appId}/stage`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stage: newStage })
+      });
+
+      if (!response.ok) {
+        console.warn('Backend stage update failed, relying on local UI state.');
+      }
+      addToast(`Candidate stage updated to "${newStage}"`, 'info');
+    } catch (err) {
+      console.error('Network error during stage update:', err);
+      addToast(`Candidate stage updated to "${newStage}" (local)`, 'info');
+    }
   };
 
   const filteredApplications = applications.filter(
@@ -118,7 +125,7 @@ export default function RecruiterDashboard({ jobs = [], user, onOpenPostJob, onU
 
   return (
     <div style={{ marginTop: '20px' }}>
-      {/* Header Banner with Both Actions */}
+      {/* Header Banner */}
       <div style={headerBannerStyle}>
         <div>
           <span style={roleBadgeStyle}>💼 Recruiter Workspace</span>
@@ -149,7 +156,7 @@ export default function RecruiterDashboard({ jobs = [], user, onOpenPostJob, onU
           </p>
         </div>
 
-        {/* Both Action Buttons Restored */}
+        {/* Action Buttons */}
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
           <button
             className="btn-secondary"
