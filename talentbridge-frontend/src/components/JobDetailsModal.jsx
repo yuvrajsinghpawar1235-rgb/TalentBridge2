@@ -3,23 +3,19 @@ import React from 'react';
 export default function JobDetailsModal({ job, isOpen, onClose, userRole, onApply, isSaved, onToggleSave }) {
   if (!isOpen || !job) return null;
 
-  // Standardize skills array or split string
+  // Standardize skills array or split string strictly from database fields
   const skillsList = Array.isArray(job.skills)
     ? job.skills
-    : typeof job.skills === 'string'
+    : typeof job.skills === 'string' && job.skills.trim().length > 0
     ? job.skills.split(',').map((s) => s.trim())
-    : ['Java', 'Spring Boot', 'React', 'MySQL'];
+    : [];
 
-  // Standardize requirements array or split string
+  // Standardize requirements array or split string strictly from database fields
   const requirementsList = Array.isArray(job.requirements)
     ? job.requirements
-    : typeof job.requirements === 'string'
+    : typeof job.requirements === 'string' && job.requirements.trim().length > 0
     ? job.requirements.split('.').filter(Boolean).map((r) => r.trim())
-    : [
-        '3+ years of experience with software engineering',
-        'Strong hands-on expertise in backend REST APIs or modern frontend frameworks',
-        'Demonstrated ability to write clean, testable code and work in agile environments'
-      ];
+    : [];
 
   return (
     <div style={backdropStyle} onClick={onClose}>
@@ -28,12 +24,12 @@ export default function JobDetailsModal({ job, isOpen, onClose, userRole, onAppl
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
           <div>
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px' }}>
-              <span style={companyBadgeStyle}>🏢 {job.companyName || 'TalentBridge Partner'}</span>
+              <span style={companyBadgeStyle}>🏢 {job.companyName || job.company || 'Partner Company'}</span>
               <span style={statusBadgeStyle(job.status)}>{job.status || 'Active'}</span>
             </div>
             <h2 style={{ margin: '0 0 6px 0', fontSize: '24px', color: 'var(--primary-accent)' }}>{job.title}</h2>
             <p style={{ margin: 0, fontSize: '14px', color: 'var(--text-secondary)' }}>
-              📍 {job.location || 'Remote'} • 📅 Posted {job.postedDate || '2026-10-15'}
+              📍 {job.location || 'Remote'} {job.postedDate ? `• 📅 Posted ${job.postedDate}` : ''}
             </p>
           </div>
           <button onClick={onClose} style={closeButtonStyle}>✕</button>
@@ -45,14 +41,14 @@ export default function JobDetailsModal({ job, isOpen, onClose, userRole, onAppl
         <div style={highlightGridStyle}>
           <div style={highlightBoxStyle}>
             <span style={highlightLabelStyle}>💰 Compensation</span>
-            <span style={highlightValueStyle}>{job.salaryRange || '$100k - $130k'}</span>
+            <span style={highlightValueStyle}>{job.salaryRange || 'Competitive / Unspecified'}</span>
           </div>
           <div style={highlightBoxStyle}>
-            <span style={highlightLabelStyle}>📍 Location Mode</span>
-            <span style={highlightValueStyle}>{job.workplaceType || 'Remote'}</span>
+            <span style={highlightLabelStyle}>📍 Workplace Mode</span>
+            <span style={highlightValueStyle}>{job.workplaceType || job.location || 'Remote'}</span>
           </div>
           <div style={highlightBoxStyle}>
-            <span style={highlightLabelStyle}>💼 Job Type</span>
+            <span style={highlightLabelStyle}>💼 Employment Type</span>
             <span style={highlightValueStyle}>{job.type || 'Full-Time'}</span>
           </div>
         </div>
@@ -63,30 +59,38 @@ export default function JobDetailsModal({ job, isOpen, onClose, userRole, onAppl
           <div>
             <h4 style={sectionTitleStyle}>📄 Role Overview</h4>
             <p style={{ margin: 0, fontSize: '14px', lineHeight: '1.6', color: 'var(--text-primary)' }}>
-              {job.description || 'Join our team to build scalable full-stack software applications and collaborate with cross-functional engineering teams.'}
+              {job.description || 'No detailed overview provided for this job listing.'}
             </p>
           </div>
 
           {/* Key Requirements */}
           <div>
             <h4 style={sectionTitleStyle}>📋 Key Requirements</h4>
-            <ul style={{ margin: 0, paddingLeft: '20px', color: 'var(--text-primary)', fontSize: '14px', lineHeight: '1.6' }}>
-              {requirementsList.map((req, index) => (
-                <li key={index} style={{ marginBottom: '4px' }}>{req}</li>
-              ))}
-            </ul>
+            {requirementsList.length === 0 ? (
+              <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)' }}>No specific key requirements listed.</p>
+            ) : (
+              <ul style={{ margin: 0, paddingLeft: '20px', color: 'var(--text-primary)', fontSize: '14px', lineHeight: '1.6' }}>
+                {requirementsList.map((req, index) => (
+                  <li key={index} style={{ marginBottom: '4px' }}>{req}</li>
+                ))}
+              </ul>
+            )}
           </div>
 
           {/* Required Skills Badges */}
           <div>
             <h4 style={sectionTitleStyle}>⚡ Technical Skills</h4>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-              {skillsList.map((skill, index) => (
-                <span key={index} style={skillPillStyle}>
-                  {skill}
-                </span>
-              ))}
-            </div>
+            {skillsList.length === 0 ? (
+              <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)' }}>No technical skills tagged for this position.</p>
+            ) : (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {skillsList.map((skill, index) => (
+                  <span key={index} style={skillPillStyle}>
+                    {skill}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 

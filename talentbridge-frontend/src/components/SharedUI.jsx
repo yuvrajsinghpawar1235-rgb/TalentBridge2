@@ -1,5 +1,7 @@
 import React from 'react';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://talentbridge2-5.onrender.com';
+
 // Loading Skeleton
 export function SkeletonCard() {
   return (
@@ -18,7 +20,9 @@ export function ErrorState({ message, onRetry }) {
     <div className="card" style={{ borderLeft: '4px solid #ef4444', textAlign: 'center', padding: '30px' }}>
       <span style={{ fontSize: '28px', display: 'block', marginBottom: '8px' }}>⚠️</span>
       <h4 style={{ margin: '0 0 6px 0', color: 'var(--text-primary)' }}>Failed to load data</h4>
-      <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: 'var(--text-secondary)' }}>{message || 'Could not connect to backend server at http://localhost:8080.'}</p>
+      <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: 'var(--text-secondary)' }}>
+        {message || `Could not connect to backend server at ${API_BASE_URL}.`}
+      </p>
       {onRetry && (
         <button className="btn-primary" onClick={onRetry} style={{ fontSize: '12px' }}>
           🔄 Retry Connection

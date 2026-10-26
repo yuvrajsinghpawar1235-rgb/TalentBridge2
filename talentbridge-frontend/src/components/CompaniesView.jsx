@@ -1,54 +1,53 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import RegisterCompanyModal from './RegisterCompanyModal';
 
-const BASE_COMPANIES = [
-  {
-    id: 1,
-    name: 'TechCorp Solutions',
-    industry: 'Software & Cloud Engineering',
-    location: 'San Francisco, CA / Remote',
-    size: '500 - 1,000 Employees',
-    verified: true,
-    description: 'Empowering enterprises through distributed cloud architecture and intelligent AI platforms.',
-    perks: ['Remote-First', 'Flexible PTO', 'Equity']
-  },
-  {
-    id: 2,
-    name: 'FinFlow Global',
-    industry: 'FinTech Systems',
-    location: 'New York, NY',
-    size: '1,000 - 5,000 Employees',
-    verified: true,
-    description: 'Building microservices and secure transaction pipelines with Spring Boot and MySQL.',
-    perks: ['Competitive Salary', '401(k) Matching']
-  }
-];
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://talentbridge2-5.onrender.com';
 
 export default function CompaniesView({ jobs = [], onSelectCompany }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
+  const [dbCompanies, setDbCompanies] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const [customCompanies, setCustomCompanies] = useState(() => {
-    try {
-      const stored = localStorage.getItem('registeredCompanies');
-      return stored ? JSON.parse(stored) : [];
-    } catch {
-      return [];
-    }
-  });
+  // Fetch registered companies dynamically from the MySQL backend
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/api/companies`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setDbCompanies(data);
+        }
+        setIsLoading(false);
+      })
+      .catch((err) => {
+        console.warn("Failed to fetch companies from database:", err);
+        setIsLoading(false);
+      });
+  }, []);
 
   const handleRegisterCompany = (newCompany) => {
-    const updated = [newCompany, ...customCompanies];
-    setCustomCompanies(updated);
-    localStorage.setItem('registeredCompanies', JSON.stringify(updated));
+    // Optimistically update list upon successful registration
+    setDbCompanies((prev) => [newCompany, ...prev]);
   };
 
   const companiesList = useMemo(() => {
     const map = new Map();
 
-    BASE_COMPANIES.forEach((c) => map.set(c.name.toLowerCase(), { ...c }));
-    customCompanies.forEach((c) => map.set(c.name.toLowerCase(), { ...c }));
+    // Populate strictly from database companies
+    dbCompanies.forEach((c) => {
+      map.set(c.name.toLowerCase(), {
+        id: c.id,
+        name: c.name,
+        industry: c.industry || 'Technology & Cloud Solutions',
+        location: c.location || 'Remote',
+        size: c.size || 'Growing Enterprise',
+        verified: c.verified ?? true,
+        description: c.description || 'Active recruiting partner offering innovative tech opportunities.',
+        perks: c.perks || ['Growth Stage', 'Competitive Compensation']
+      });
+    });
 
+    // Also account for companies found in active jobs if not already listed
     jobs.forEach((job) => {
       const companyName = job.companyName || job.company || job.company_name;
       if (companyName) {
@@ -79,12 +78,12 @@ export default function CompaniesView({ jobs = [], onSelectCompany }) {
         activeJobsCount: activeCount
       };
     });
-  }, [jobs, customCompanies]);
+  }, [jobs, dbCompanies]);
 
   const filteredCompanies = companiesList.filter((comp) => {
     if (!searchTerm) return true;
     const term = searchTerm.toLowerCase();
-    return comp.name.toLowerCase().includes(term) || comp.industry.toLowerCase().includes(term);
+    return comp.name.toLowerCase().includes(term) || (comp.industry && comp.industry.toLowerCase().includes(term));
   });
 
   return (
@@ -119,43 +118,53 @@ export default function CompaniesView({ jobs = [], onSelectCompany }) {
         />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
-        {filteredCompanies.map((comp) => (
-          <div key={comp.id} className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', borderTop: '4px solid var(--primary-accent)' }}>
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
-                <h3 style={{ margin: 0, fontSize: '18px', color: 'var(--primary-accent)' }}>{comp.name}</h3>
-                {comp.verified && (
-                  <span style={{ fontSize: '10px', backgroundColor: 'rgba(16, 185, 129, 0.15)', color: 'var(--accent-green)', fontWeight: 'bold', padding: '3px 8px', borderRadius: '10px' }}>
-                    ✓ Verified
-                  </span>
-                )}
+      {isLoading ? (
+        <div className="card" style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>
+          Loading companies from database...
+        </div>
+      ) : filteredCompanies.length === 0 ? (
+        <div className="card" style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>
+          No companies registered in the database yet. Click "+ Register New Company" to add one!
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
+          {filteredCompanies.map((comp) => (
+            <div key={comp.id} className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', borderTop: '4px solid var(--primary-accent)' }}>
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+                  <h3 style={{ margin: 0, fontSize: '18px', color: 'var(--primary-accent)' }}>{comp.name}</h3>
+                  {comp.verified && (
+                    <span style={{ fontSize: '10px', backgroundColor: 'rgba(16, 185, 129, 0.15)', color: 'var(--accent-green)', fontWeight: 'bold', padding: '3px 8px', borderRadius: '10px' }}>
+                      ✓ Verified
+                    </span>
+                  )}
+                </div>
+
+                <p style={{ margin: '0 0 12px 0', fontSize: '13px', color: 'var(--text-secondary)' }}>
+                  📍 {comp.location} • 👥 {comp.size}
+                </p>
+
+                <p style={{ margin: '0 0 16px 0', fontSize: '14px', color: 'var(--text-primary)', lineHeight: '1.5' }}>
+                  {comp.description}
+                </p>
               </div>
 
-              <p style={{ margin: '0 0 12px 0', fontSize: '13px', color: 'var(--text-secondary)' }}>
-                📍 {comp.location} • 👥 {comp.size}
-              </p>
-
-              <p style={{ margin: '0 0 16px 0', fontSize: '14px', color: 'var(--text-primary)', lineHeight: '1.5' }}>
-                {comp.description}
-              </p>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '12px', borderTop: '1px solid var(--border-color)' }}>
+                <span style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--accent-purple)' }}>
+                  💼 {comp.activeJobsCount} Active Job{comp.activeJobsCount === 1 ? '' : 's'}
+                </span>
+                <button
+                  className="btn-primary"
+                  onClick={() => onSelectCompany && onSelectCompany(comp.name)}
+                  style={{ fontSize: '12px', padding: '6px 14px' }}
+                >
+                  View Open Jobs →
+                </button>
+              </div>
             </div>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '12px', borderTop: '1px solid var(--border-color)' }}>
-              <span style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--accent-purple)' }}>
-                💼 {comp.activeJobsCount} Active Job{comp.activeJobsCount === 1 ? '' : 's'}
-              </span>
-              <button
-                className="btn-primary"
-                onClick={() => onSelectCompany && onSelectCompany(comp.name)}
-                style={{ fontSize: '12px', padding: '6px 14px' }}
-              >
-                View Open Jobs →
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       <RegisterCompanyModal
         isOpen={isRegisterOpen}

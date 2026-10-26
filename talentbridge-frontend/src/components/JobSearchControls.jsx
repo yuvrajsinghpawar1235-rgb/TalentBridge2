@@ -1,64 +1,5 @@
 import React, { useState, useMemo } from 'react';
 
-// Fallback demo jobs for seamless demo mode when backend returns empty data
-const MOCK_DEMO_JOBS = [
-  {
-    id: 1,
-    title: 'Full Stack Software Engineer',
-    companyName: 'TechCorp Solutions',
-    location: 'San Francisco, CA',
-    type: 'Full-Time',
-    workplaceType: 'Remote',
-    experienceLevel: 'Entry',
-    salaryRange: '$110,000 - $125,000',
-    description: 'Empowering enterprises through distributed cloud architecture and intelligent AI platforms using React and Spring Boot.'
-  },
-  {
-    id: 2,
-    title: 'Senior Frontend Architect',
-    companyName: 'TechCorp Solutions',
-    location: 'New York, NY',
-    type: 'Full-Time',
-    workplaceType: 'Hybrid',
-    experienceLevel: 'Senior',
-    salaryRange: '$140,000 - $165,000',
-    description: 'Lead frontend architecture, performance optimization, and scalable design systems.'
-  },
-  {
-    id: 3,
-    title: 'Java Backend Developer',
-    companyName: 'FinFlow Global',
-    location: 'Chicago, IL',
-    type: 'Full-Time',
-    workplaceType: 'On-site',
-    experienceLevel: 'Mid',
-    salaryRange: '$120,000 - $135,000',
-    description: 'Build high-performance microservices and secure banking transaction pipelines with Spring Boot and MySQL.'
-  },
-  {
-    id: 4,
-    title: 'AI / Machine Learning Engineer',
-    companyName: 'Neural Systems AI',
-    location: 'Austin, TX',
-    type: 'Full-Time',
-    workplaceType: 'Remote',
-    experienceLevel: 'Mid',
-    salaryRange: '$130,000 - $150,000',
-    description: 'Develop deep learning pipelines, computer vision models, and LLM integration tools using Python and PyTorch.'
-  },
-  {
-    id: 5,
-    title: 'DevOps & Cloud Engineer',
-    companyName: 'CloudScale Inc.',
-    location: 'Seattle, WA',
-    type: 'Contract',
-    workplaceType: 'Remote',
-    experienceLevel: 'Senior',
-    salaryRange: '$135,000 - $155,000',
-    description: 'Manage AWS infrastructure, Kubernetes clusters, and automated CI/CD deployment pipelines.'
-  }
-];
-
 export default function JobSearchControls({ jobs = [], onApplyJob, onToggleSaveJob, savedJobs = [] }) {
   // 1. SEARCH & FILTER STATES
   const [searchTerm, setSearchTerm] = useState('');
@@ -74,20 +15,17 @@ export default function JobSearchControls({ jobs = [], onApplyJob, onToggleSaveJ
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 4;
 
-  // Use backend jobs if available and non-empty, otherwise fallback to mock demo jobs
+  // Use live database jobs strictly without any fallback mock arrays
   const safeJobs = useMemo(() => {
-    if (Array.isArray(jobs) && jobs.length > 0) {
-      return jobs;
-    }
-    return MOCK_DEMO_JOBS;
+    return Array.isArray(jobs) ? jobs : [];
   }, [jobs]);
 
-  // Filtering Logic (Resilient & Fallback-Safe)
+  // Filtering Logic (Database-Driven)
   const filteredJobs = useMemo(() => {
     return safeJobs.filter((job) => {
       const searchTermLower = searchTerm.toLowerCase();
 
-      // Safe fallbacks for missing or variations in backend field names
+      // Safe database field mappings
       const title = (job.title || '').toLowerCase();
       const company = (job.companyName || job.company || '').toLowerCase();
       const location = (job.location || '').toLowerCase();
@@ -100,7 +38,6 @@ export default function JobSearchControls({ jobs = [], onApplyJob, onToggleSaveJ
         location.includes(searchTermLower) ||
         description.includes(searchTermLower);
 
-      // Flexible attribute matching with default values
       const jobType = job.type || job.jobType || 'Full-Time';
       const jobWorkplace = job.workplaceType || job.workplace || 'Remote';
       const jobExperience = job.experienceLevel || job.experience || 'Entry';
@@ -118,7 +55,7 @@ export default function JobSearchControls({ jobs = [], onApplyJob, onToggleSaveJ
   const sortedJobs = useMemo(() => {
     const jobsCopy = [...filteredJobs];
     if (sortBy === 'NEWEST') {
-      return jobsCopy.sort((a, b) => new Date(b.postedDate || '2026-10-01') - new Date(a.postedDate || '2026-10-01'));
+      return jobsCopy.sort((a, b) => new Date(b.postedDate || 0) - new Date(a.postedDate || 0));
     }
     if (sortBy === 'SALARY_HIGH_LOW') {
       return jobsCopy.sort((a, b) => (b.salaryMin || 0) - (a.salaryMin || 0));
@@ -218,7 +155,7 @@ export default function JobSearchControls({ jobs = [], onApplyJob, onToggleSaveJ
       {/* Listings */}
       {paginatedJobs.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>
-          🔍 No jobs found matching your filters.
+          🔍 No jobs found in the database. Post a new job from your recruiter dashboard to see listings here!
         </div>
       ) : (
         <div style={{ display: 'grid', gap: '14px', marginBottom: '20px' }}>
@@ -235,7 +172,7 @@ export default function JobSearchControls({ jobs = [], onApplyJob, onToggleSaveJ
                   </div>
                   <h4 style={{ margin: '0 0 4px 0', fontSize: '18px', color: 'var(--primary-accent)' }}>{job.title}</h4>
                   <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)' }}>
-                    🏢 {job.companyName || job.company || 'TalentBridge Partner'} • 📍 {job.location || 'Remote'} • 💰 {job.salaryRange || '$100k - $120k'}
+                    🏢 {job.companyName || job.company || 'Partner Company'} • 📍 {job.location || 'Remote'} • 💰 {job.salaryRange || 'Competitive'}
                   </p>
                 </div>
 

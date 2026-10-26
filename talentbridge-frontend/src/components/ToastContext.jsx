@@ -58,7 +58,7 @@ const toastContainerStyle = {
 const toastStyle = (type) => ({
   display: 'flex',
   alignItems: 'center',
-  justify: 'space-between',
+  justifyContent: 'space-between',
   gap: '12px',
   minWidth: '280px',
   padding: '12px 16px',

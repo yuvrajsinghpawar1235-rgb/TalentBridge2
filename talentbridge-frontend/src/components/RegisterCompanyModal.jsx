@@ -19,7 +19,7 @@ export default function RegisterCompanyModal({ isOpen, onClose, onCompanyRegiste
     e.preventDefault();
 
     if (!companyName.trim() || !location.trim()) {
-      addToast('Please provide a company name and location!', 'error');
+      if (addToast) addToast('Please provide a company name and location!', 'error');
       return;
     }
 
@@ -36,34 +36,36 @@ export default function RegisterCompanyModal({ isOpen, onClose, onCompanyRegiste
     };
 
     try {
-      // 1. Send POST request to backend API
+      // Send POST request directly to MySQL Spring Boot backend
       const response = await fetch(`${API_BASE_URL}/api/companies`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newCompanyPayload)
       });
 
-      let savedCompany = { ...newCompanyPayload, id: Date.now() };
-      if (response.ok) {
-        savedCompany = await response.json();
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to register company in backend database.');
       }
+
+      const savedCompany = await response.json();
 
       if (onCompanyRegistered) {
         onCompanyRegistered(savedCompany);
       }
 
-      addToast(`🎉 Company "${companyName}" registered successfully!`, 'success');
+      if (addToast) addToast(`🎉 Company "${companyName}" registered successfully!`, 'success');
       setCompanyName('');
       setLocation('');
       setDescription('');
       onClose();
     } catch (err) {
-      console.warn('Backend database POST failed for company registration, saving locally:', err);
-      if (onCompanyRegistered) {
-        onCompanyRegistered({ ...newCompanyPayload, id: Date.now() });
+      console.error('Error registering company to database:', err);
+      if (addToast) {
+        addToast(`Error: ${err.message}`, 'error');
+      } else {
+        alert(`Error registering company: ${err.message}`);
       }
-      addToast(`🎉 Company "${companyName}" registered successfully!`, 'success');
-      onClose();
     } finally {
       setIsSubmitting(false);
     }

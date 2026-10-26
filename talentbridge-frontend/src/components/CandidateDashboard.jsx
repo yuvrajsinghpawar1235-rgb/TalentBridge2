@@ -5,16 +5,16 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://talentbridge2
 export default function CandidateDashboard({ jobs, user, savedJobs, onToggleSaveJob }) {
   const [activeTab, setActiveTab] = useState('dashboard');
 
-  // 1. PROFILE STATE (Synced directly with logged-in user props)
+  // 1. PROFILE STATE (Synced strictly with logged-in user props or blank defaults)
   const [profile, setProfile] = useState({
-    name: user?.name || 'Job Seeker',
-    email: user?.email || 'user@talentbridge.app',
-    title: user?.title || 'Full Stack Software Engineer',
-    university: user?.university || 'B.Tech in Computer Science',
+    name: user?.name || '',
+    email: user?.email || '',
+    title: user?.title || '',
+    university: user?.university || '',
     isFresher: user?.isFresher ?? true,
-    latestExperience: user?.latestExperience || 'Open Source Contributor & Projects',
-    bio: user?.bio || 'Passionate computer science graduate experienced in React, Spring Boot, Python, and cloud deployments.',
-    skills: user?.skills || ['React', 'JavaScript', 'Spring Boot', 'Python', 'MySQL', 'Git']
+    latestExperience: user?.latestExperience || '',
+    bio: user?.bio || '',
+    skills: user?.skills || []
   });
 
   const [newSkillInput, setNewSkillInput] = useState('');
@@ -22,9 +22,9 @@ export default function CandidateDashboard({ jobs, user, savedJobs, onToggleSave
 
   // 2. RESUME STATE
   const [resumeFile, setResumeFile] = useState({
-    name: `${(user?.name || 'Candidate').replace(/\s+/g, '_')}_Resume_2026.pdf`,
-    size: '245 KB',
-    updatedAt: 'Oct 2026'
+    name: user?.name ? `${user.name.replace(/\s+/g, '_')}_Resume.pdf` : 'Candidate_Resume.pdf',
+    size: '0 KB',
+    updatedAt: 'Not uploaded'
   });
   const [uploadMessage, setUploadMessage] = useState('');
 
@@ -54,7 +54,7 @@ export default function CandidateDashboard({ jobs, user, savedJobs, onToggleSave
     {
       id: 0,
       title: 'Welcome to TalentBridge!',
-      text: `Your candidate workspace is active for ${profile.name}.`,
+      text: `Your candidate workspace is active for ${profile.name || 'Candidate'}.`,
       date: 'Account Active',
       read: true
     },
@@ -129,12 +129,12 @@ export default function CandidateDashboard({ jobs, user, savedJobs, onToggleSave
         <button onClick={() => setActiveTab('notifications')} style={subnavTabStyle(activeTab === 'notifications')}>🔔 Notifications ({notifications.filter(n => !n.read).length})</button>
       </div>
 
-      {/* 1. OVERVIEW */}
+      {/* OVERVIEW TAB */}
       {activeTab === 'dashboard' && (
         <div>
           <div style={welcomeBannerStyle}>
             <div>
-              <h2 style={{ margin: '0 0 6px 0', color: 'var(--text-primary)', fontSize: '24px' }}>Welcome back, {profile.name}! 👋</h2>
+              <h2 style={{ margin: '0 0 6px 0', color: 'var(--text-primary)', fontSize: '24px' }}>Welcome back, {profile.name || 'Candidate'}! 👋</h2>
               <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '14px' }}>Track your active applications, interview schedules, and saved opportunities.</p>
             </div>
             <button className="btn-primary" onClick={() => setActiveTab('applications')}>View Applications →</button>
@@ -160,7 +160,7 @@ export default function CandidateDashboard({ jobs, user, savedJobs, onToggleSave
             <div className="card" style={statCardStyle}>
               <span style={statLabelStyle}>Skill Match Rate</span>
               <h3 style={{ ...statValueStyle, color: 'var(--primary-accent)' }}>
-                {Math.min(98, 70 + profile.skills.length * 4)}%
+                {profile.skills.length > 0 ? Math.min(98, 50 + profile.skills.length * 8) : 0}%
               </h3>
             </div>
           </div>
@@ -173,7 +173,7 @@ export default function CandidateDashboard({ jobs, user, savedJobs, onToggleSave
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
               <div style={avatarCircleStyle}>
-                {profile.name.charAt(0)}
+                {profile.name ? profile.name.charAt(0).toUpperCase() : 'C'}
               </div>
               <div>
                 <h3 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '20px' }}>Candidate Profile Overview</h3>
@@ -190,11 +190,11 @@ export default function CandidateDashboard({ jobs, user, savedJobs, onToggleSave
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
                 <div style={inputGroupStyle}>
                   <label style={labelStyle}>Full Name</label>
-                  <input type="text" value={profile.name} onChange={(e) => setProfile({ ...profile, name: e.target.value })} style={inputStyle} />
+                  <input type="text" value={profile.name} onChange={(e) => setProfile({ ...profile, name: e.target.value })} style={inputStyle} placeholder="Enter full name" />
                 </div>
                 <div style={inputGroupStyle}>
                   <label style={labelStyle}>Professional Title</label>
-                  <input type="text" value={profile.title} onChange={(e) => setProfile({ ...profile, title: e.target.value })} style={inputStyle} />
+                  <input type="text" value={profile.title} onChange={(e) => setProfile({ ...profile, title: e.target.value })} style={inputStyle} placeholder="e.g. Software Engineer" />
                 </div>
               </div>
 
@@ -212,12 +212,12 @@ export default function CandidateDashboard({ jobs, user, savedJobs, onToggleSave
 
               <div style={inputGroupStyle}>
                 <label style={labelStyle}>{profile.isFresher ? 'Latest Academic Projects / Internships' : 'Latest Work Experience'}</label>
-                <textarea rows={2} value={profile.latestExperience} onChange={(e) => setProfile({ ...profile, latestExperience: e.target.value })} style={inputStyle} />
+                <textarea rows={2} value={profile.latestExperience} onChange={(e) => setProfile({ ...profile, latestExperience: e.target.value })} style={inputStyle} placeholder="Describe your projects or experience..." />
               </div>
 
               <div style={inputGroupStyle}>
                 <label style={labelStyle}>About / Bio Summary</label>
-                <textarea rows={3} value={profile.bio} onChange={(e) => setProfile({ ...profile, bio: e.target.value })} style={inputStyle} />
+                <textarea rows={3} value={profile.bio} onChange={(e) => setProfile({ ...profile, bio: e.target.value })} style={inputStyle} placeholder="Write a short professional summary..." />
               </div>
 
               <div style={{ marginBottom: '15px' }}>
@@ -241,9 +241,9 @@ export default function CandidateDashboard({ jobs, user, savedJobs, onToggleSave
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', backgroundColor: 'var(--bg-secondary)', padding: '20px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
                 <div>
-                  <h4 style={{ margin: '0 0 4px 0', fontSize: '22px', color: 'var(--primary-accent)' }}>{profile.name}</h4>
-                  <p style={{ margin: '0 0 8px 0', fontSize: '15px', color: 'var(--text-primary)', fontWeight: '700' }}>{profile.title}</p>
-                  <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>✉️ {profile.email}</span>
+                  <h4 style={{ margin: '0 0 4px 0', fontSize: '22px', color: 'var(--primary-accent)' }}>{profile.name || 'Unnamed Candidate'}</h4>
+                  <p style={{ margin: '0 0 8px 0', fontSize: '15px', color: 'var(--text-primary)', fontWeight: '700' }}>{profile.title || 'No title specified'}</p>
+                  <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>✉️ {profile.email || 'No email provided'}</span>
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <span style={{ display: 'inline-block', backgroundColor: 'var(--badge-bg)', color: 'var(--primary-accent)', fontSize: '11px', fontWeight: 'bold', padding: '6px 12px', borderRadius: '20px' }}>
@@ -255,11 +255,11 @@ export default function CandidateDashboard({ jobs, user, savedJobs, onToggleSave
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
                 <div style={subCardStyle}>
                   <strong style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>EDUCATION</strong>
-                  <p style={{ margin: '4px 0 0 0', fontSize: '13px', fontWeight: 'bold' }}>{profile.university}</p>
+                  <p style={{ margin: '4px 0 0 0', fontSize: '13px', fontWeight: 'bold' }}>{profile.university || 'Not specified'}</p>
                 </div>
                 <div style={subCardStyle}>
                   <strong style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>EXPERIENCE TRACK</strong>
-                  <p style={{ margin: '4px 0 0 0', fontSize: '13px', fontWeight: 'bold' }}>{profile.isFresher ? 'Entry-Level / 2026 Batch' : 'Mid-Level'}</p>
+                  <p style={{ margin: '4px 0 0 0', fontSize: '13px', fontWeight: 'bold' }}>{profile.isFresher ? 'Entry-Level' : 'Mid/Senior Level'}</p>
                 </div>
                 <div style={subCardStyle}>
                   <strong style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>VERIFIED SKILLS</strong>
@@ -269,21 +269,25 @@ export default function CandidateDashboard({ jobs, user, savedJobs, onToggleSave
 
               <div style={{ ...subCardStyle, borderLeft: '4px solid var(--primary-accent)' }}>
                 <strong style={{ fontSize: '12px', color: 'var(--primary-accent)', display: 'block', marginBottom: '6px' }}>💡 Professional Bio Summary</strong>
-                <p style={{ margin: 0, fontSize: '14px', color: 'var(--text-primary)', lineHeight: '1.6' }}>{profile.bio}</p>
+                <p style={{ margin: 0, fontSize: '14px', color: 'var(--text-primary)', lineHeight: '1.6' }}>{profile.bio || 'No bio summary added yet. Click "Edit Profile" to add one.'}</p>
               </div>
 
               <div style={{ ...subCardStyle, borderLeft: '4px solid var(--accent-green)' }}>
                 <strong style={{ fontSize: '12px', color: 'var(--accent-green)', display: 'block', marginBottom: '6px' }}>🚀 {profile.isFresher ? 'Key Projects & Academic Work' : 'Recent Work Experience'}</strong>
-                <p style={{ margin: 0, fontSize: '14px', color: 'var(--text-primary)', lineHeight: '1.5' }}>{profile.latestExperience}</p>
+                <p style={{ margin: 0, fontSize: '14px', color: 'var(--text-primary)', lineHeight: '1.5' }}>{profile.latestExperience || 'No experience or projects added yet.'}</p>
               </div>
 
               <div>
                 <strong style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block', marginBottom: '10px' }}>CORE TECHNICAL STACK</strong>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                  {profile.skills.map((skill, index) => (
-                    <span key={index} style={skillBadgeStyle}>{skill}</span>
-                  ))}
-                </div>
+                {profile.skills.length === 0 ? (
+                  <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>No skills listed yet.</p>
+                ) : (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {profile.skills.map((skill, index) => (
+                      <span key={index} style={skillBadgeStyle}>{skill}</span>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -406,7 +410,7 @@ export default function CandidateDashboard({ jobs, user, savedJobs, onToggleSave
                   <div>
                     <h4 style={{ margin: '0 0 4px 0', color: 'var(--primary-accent)', fontSize: '18px' }}>{job.title}</h4>
                     <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)' }}>
-                      🏢 {job.companyName || 'TalentBridge Partner'} • 📍 {job.location} • 💰 {job.salaryRange}
+                      🏢 {job.companyName || 'Partner Company'} • 📍 {job.location} • 💰 {job.salaryRange}
                     </p>
                   </div>
                   <div style={{ display: 'flex', gap: '8px' }}>

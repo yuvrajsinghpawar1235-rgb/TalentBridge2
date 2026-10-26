@@ -21,13 +21,13 @@ export default function PostJobModal({ isOpen, onClose, onJobPosted, user }) {
     e.preventDefault();
 
     if (!title.trim() || !location.trim() || !description.trim()) {
-      addToast('Please fill out all required fields!', 'error');
+      if (addToast) addToast('Please fill out all required fields!', 'error');
       return;
     }
 
     setIsSubmitting(true);
 
-    const companyName = user?.companyName || user?.company || 'My Organization';
+    const companyName = user?.companyName || user?.company || user?.name || 'Partner Company';
 
     const jobPayload = {
       title: title.trim(),
@@ -36,33 +36,35 @@ export default function PostJobModal({ isOpen, onClose, onJobPosted, user }) {
       type,
       workplaceType,
       experienceLevel,
-      salaryRange: salaryRange.trim() || '$100,000 - $130,000',
+      salaryRange: salaryRange.trim() || 'Competitive / Unspecified',
       description: description.trim(),
       status: 'Active',
       postedDate: new Date().toISOString().split('T')[0]
     };
 
     try {
-      // 1. Send POST request directly to MySQL Spring Boot backend
+      // Send POST request directly to MySQL Spring Boot backend
       const response = await fetch(`${API_BASE_URL}/api/jobs`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(jobPayload)
       });
 
-      let savedJob = jobPayload;
-      if (response.ok) {
-        savedJob = await response.json();
-      } else {
-        console.warn('Backend database POST failed or returned non-200. Falling back to local state update.');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to persist job listing to backend database.');
       }
 
-      // 2. Trigger parent callback to update UI immediately
+      const savedJob = await response.json();
+
+      // Trigger parent callback with live MySQL record
       if (onJobPosted) {
         onJobPosted(savedJob);
       }
 
-      // Reset form
+      if (addToast) addToast('🎉 Job listing published successfully to live database!', 'success');
+
+      // Reset form fields
       setTitle('');
       setLocation('');
       setSalaryRange('');
@@ -70,11 +72,11 @@ export default function PostJobModal({ isOpen, onClose, onJobPosted, user }) {
       onClose();
     } catch (err) {
       console.error('Error posting job to database:', err);
-      // Fallback local UI update if backend network error occurs
-      if (onJobPosted) {
-        onJobPosted({ ...jobPayload, id: Date.now() });
+      if (addToast) {
+        addToast(`Error: ${err.message}`, 'error');
+      } else {
+        alert(`Error publishing job: ${err.message}`);
       }
-      onClose();
     } finally {
       setIsSubmitting(false);
     }

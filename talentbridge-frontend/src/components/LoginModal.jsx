@@ -38,18 +38,6 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, initialRol
 
   const theme = getRoleTheme();
 
-  const handleDemoLogin = (demoRole) => {
-    const demoUsers = {
-      CANDIDATE: { id: 10, name: 'Alex Morgan (Demo)', email: 'alex.demo@talentbridge.app', role: 'CANDIDATE' },
-      RECRUITER: { id: 20, name: 'Sarah Recruiter (Demo)', email: 'sarah.recruiter@talentbridge.app', role: 'RECRUITER' },
-      ADMIN: { id: 30, name: 'Master Admin (Demo)', email: 'admin@talentbridge.com', role: 'ADMIN' }
-    };
-    const user = demoUsers[demoRole];
-    localStorage.setItem('user', JSON.stringify(user));
-    onLoginSuccess(user);
-    onClose();
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -198,45 +186,7 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, initialRol
               </button>
             </form>
 
-            <div style={{ marginTop: '18px', paddingTop: '15px', borderTop: '1px dashed var(--border-color)' }}>
-              <div style={{ fontSize: '11px', fontWeight: '800', letterSpacing: '0.05em', color: 'var(--text-secondary)', textAlign: 'center', marginBottom: '10px', textTransform: 'uppercase' }}>
-                ✦ Instant Demo Access
-              </div>
-
-              {isGenericHeader ? (
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button type="button" onClick={() => handleDemoLogin('CANDIDATE')} style={stylishDemoBtnStyle('var(--primary-accent)', 'var(--badge-bg)')}>
-                    👤 Candidate
-                  </button>
-                  <button type="button" onClick={() => handleDemoLogin('RECRUITER')} style={stylishDemoBtnStyle('var(--accent-green)', 'rgba(16, 185, 129, 0.12)')}>
-                    💼 Recruiter
-                  </button>
-                  <button type="button" onClick={() => handleDemoLogin('ADMIN')} style={stylishDemoBtnStyle('var(--accent-purple)', 'rgba(168, 85, 247, 0.12)')}>
-                    🛡️ Admin
-                  </button>
-                </div>
-              ) : (
-                <div>
-                  {role === 'CANDIDATE' && (
-                    <button type="button" onClick={() => handleDemoLogin('CANDIDATE')} style={stylishSingleDemoBtnStyle('var(--primary-accent)', 'var(--badge-bg)')}>
-                      👤 Launch Candidate Demo →
-                    </button>
-                  )}
-                  {role === 'RECRUITER' && (
-                    <button type="button" onClick={() => handleDemoLogin('RECRUITER')} style={stylishSingleDemoBtnStyle('var(--accent-green)', 'rgba(16, 185, 129, 0.12)')}>
-                      💼 Launch Recruiter Demo →
-                    </button>
-                  )}
-                  {role === 'ADMIN' && (
-                    <button type="button" onClick={() => handleDemoLogin('ADMIN')} style={stylishSingleDemoBtnStyle('var(--accent-purple)', 'rgba(168, 85, 247, 0.12)')}>
-                      🛡️ Launch Master Admin Demo →
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <p style={{ marginTop: '16px', textAlign: 'center', fontSize: '13px', color: 'var(--text-secondary)', marginBottom: 0 }}>
+            <p style={{ marginTop: '20px', textAlign: 'center', fontSize: '13px', color: 'var(--text-secondary)', marginBottom: 0 }}>
               {view === 'REGISTER' ? 'Already have an account?' : "Don't have an account?"}{' '}
               <span
                 onClick={() => setView(view === 'REGISTER' ? 'LOGIN' : 'REGISTER')}
@@ -260,33 +210,4 @@ const labelStyle = { fontSize: '12px', fontWeight: '600', color: 'var(--text-sec
 const inputStyle = { padding: '9px 12px', borderRadius: '6px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-input, #ffffff)', color: 'var(--text-primary)', fontSize: '14px', outline: 'none' };
 const submitBtnStyle = { width: '100%', padding: '10px', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '700', fontSize: '14px', marginTop: '6px' };
 const linkBtnStyle = { marginTop: '12px', width: '100%', padding: '8px', backgroundColor: 'transparent', color: 'var(--text-secondary)', border: 'none', cursor: 'pointer', fontSize: '13px', textAlign: 'center' };
-
-const stylishDemoBtnStyle = (color, bg) => ({
-  flex: 1,
-  padding: '7px 4px',
-  fontSize: '11px',
-  fontWeight: '700',
-  color: color,
-  backgroundColor: bg,
-  border: `1px solid ${color}`,
-  borderRadius: '20px',
-  cursor: 'pointer',
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
-  gap: '4px'
-});
-
-const stylishSingleDemoBtnStyle = (color, bg) => ({
-  width: '100%',
-  padding: '9px',
-  fontSize: '12px',
-  fontWeight: '700',
-  color: color,
-  backgroundColor: bg,
-  border: `1px solid ${color}`,
-  borderRadius: '20px',
-  cursor: 'pointer'
-});
-
 const closeXStyle = { background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: '16px', cursor: 'pointer' };

@@ -4,42 +4,15 @@ import { useToast } from '../context/ToastContext';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://talentbridge2-5.onrender.com";
 
-// Seeded applications ONLY for demo recruiter accounts
-const MOCK_DEMO_APPLICATIONS = [
-  {
-    id: 101,
-    jobId: 1,
-    candidateName: 'Alex Morgan',
-    candidateEmail: 'alex.morgan@example.com',
-    companyName: 'TechCorp Solutions',
-    jobTitle: 'Full Stack Software Engineer',
-    stage: 'APPLIED',
-    appliedDate: '2026-10-20',
-    notes: 'Strong background in Spring Boot & React.'
-  },
-  {
-    id: 102,
-    jobId: 2,
-    candidateName: 'Jordan Lee',
-    candidateEmail: 'jordan.lee@example.com',
-    companyName: 'TechCorp Solutions',
-    jobTitle: 'Senior Frontend Architect',
-    stage: 'INTERVIEW',
-    appliedDate: '2026-10-18',
-    notes: 'Technical interview scheduled for Tuesday.'
-  }
-];
-
 export default function RecruiterDashboard({ jobs = [], user, onOpenPostJob, onUpdateRecruiterCompany }) {
   const [applications, setApplications] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeStageFilter, setActiveStageFilter] = useState('ALL');
   const [isEditingCompany, setIsEditingCompany] = useState(false);
   const [isRegisterCompanyOpen, setIsRegisterCompanyOpen] = useState(false);
-  const [companyNameInput, setCompanyNameInput] = useState(user?.companyName || user?.company || 'My Organization');
+  const [companyNameInput, setCompanyNameInput] = useState(user?.companyName || user?.company || 'Partner Company');
   const { addToast } = useToast();
 
-  const isDemoAccount = user?.email === 'recruiter@talentbridge.com' || user?.isDemo;
   const recruiterCompany = user?.companyName || user?.company || companyNameInput;
 
   useEffect(() => {
@@ -50,21 +23,23 @@ export default function RecruiterDashboard({ jobs = [], user, onOpenPostJob, onU
         return res.json();
       })
       .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
+          // Filter candidate applications matching this recruiter's company from MySQL
           const companyApps = data.filter(
-            (app) => (app.companyName || '').toLowerCase() === recruiterCompany.toLowerCase()
+            (app) => (app.companyName || app.company || '').toLowerCase() === recruiterCompany.toLowerCase()
           );
           setApplications(companyApps);
         } else {
-          setApplications(isDemoAccount ? MOCK_DEMO_APPLICATIONS : []);
+          setApplications([]);
         }
         setIsLoading(false);
       })
-      .catch(() => {
-        setApplications(isDemoAccount ? MOCK_DEMO_APPLICATIONS : []);
+      .catch((err) => {
+        console.warn('Error loading recruiter applications from database:', err);
+        setApplications([]);
         setIsLoading(false);
       });
-  }, [recruiterCompany, isDemoAccount]);
+  }, [recruiterCompany]);
 
   // Filter jobs strictly matching this recruiter's company
   const myCompanyJobs = jobs.filter(
@@ -78,18 +53,10 @@ export default function RecruiterDashboard({ jobs = [], user, onOpenPostJob, onU
       onUpdateRecruiterCompany(companyNameInput.trim());
     }
     setIsEditingCompany(false);
-    addToast(`Company name updated to "${companyNameInput.trim()}"`, 'success');
+    if (addToast) addToast(`Company name updated to "${companyNameInput.trim()}"`, 'success');
   };
 
   const handleCompanyRegistered = (newCompany) => {
-    try {
-      const stored = localStorage.getItem('registeredCompanies');
-      const existing = stored ? JSON.parse(stored) : [];
-      localStorage.setItem('registeredCompanies', JSON.stringify([newCompany, ...existing]));
-    } catch (e) {
-      console.warn('LocalStorage save failed', e);
-    }
-
     if (onUpdateRecruiterCompany) {
       onUpdateRecruiterCompany(newCompany.name);
     }
@@ -110,12 +77,12 @@ export default function RecruiterDashboard({ jobs = [], user, onOpenPostJob, onU
       });
 
       if (!response.ok) {
-        console.warn('Backend stage update failed, relying on local UI state.');
+        console.warn('Backend stage update failed, relying on local state.');
       }
-      addToast(`Candidate stage updated to "${newStage}"`, 'info');
+      if (addToast) addToast(`Candidate stage updated to "${newStage}"`, 'info');
     } catch (err) {
       console.error('Network error during stage update:', err);
-      addToast(`Candidate stage updated to "${newStage}" (local)`, 'info');
+      if (addToast) addToast(`Candidate stage updated to "${newStage}"`, 'info');
     }
   };
 
@@ -225,27 +192,27 @@ export default function RecruiterDashboard({ jobs = [], user, onOpenPostJob, onU
           <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '20px' }}>Loading applicant pipeline...</p>
         ) : filteredApplications.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>
-            <p style={{ margin: 0, fontSize: '15px' }}>No candidate applications yet.</p>
-            <p style={{ fontSize: '13px', marginTop: '6px' }}>When job seekers apply to listings posted by {recruiterCompany}, their cards will appear here.</p>
+            <p style={{ margin: 0, fontSize: '15px' }}>No candidate applications in the database yet.</p>
+            <p style={{ fontSize: '13px', marginTop: '6px' }}>When job seekers apply to listings posted by {recruiterCompany}, their live applications will populate here.</p>
           </div>
         ) : (
           <div style={{ display: 'grid', gap: '12px' }}>
             {filteredApplications.map((app) => (
               <div key={app.id} style={applicantCardStyle}>
                 <div>
-                  <h4 style={{ margin: '0 0 4px 0', fontSize: '16px', color: 'var(--text-primary)' }}>{app.candidateName}</h4>
+                  <h4 style={{ margin: '0 0 4px 0', fontSize: '16px', color: 'var(--text-primary)' }}>{app.candidateName || `Candidate #${app.candidateId || app.id}`}</h4>
                   <p style={{ margin: '0 0 6px 0', fontSize: '13px', color: 'var(--primary-accent)' }}>
-                    Applying for: <strong>{app.jobTitle}</strong>
+                    Applying for: <strong>{app.jobTitle || `Job #${app.jobId}`}</strong>
                   </p>
                   <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-secondary)' }}>
-                    ✉️ {app.candidateEmail} • 📅 Applied {app.appliedDate || 'Recently'}
+                    ✉️ {app.candidateEmail || 'No email specified'} • 📅 Applied {app.appliedDate || app.appliedAt ? new Date(app.appliedDate || app.appliedAt).toLocaleDateString() : 'Recently'}
                   </p>
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
                   <label style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>UPDATE STAGE</label>
                   <select
-                    value={app.stage}
+                    value={app.stage || 'APPLIED'}
                     onChange={(e) => handleStageChange(app.id, e.target.value)}
                     style={selectStyle}
                   >

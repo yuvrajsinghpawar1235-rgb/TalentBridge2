@@ -12,25 +12,11 @@ export default function AdminDashboard({ jobs = [], onJobUpdated }) {
     totalInterviews: 0
   });
 
-  const [users, setUsers] = useState([
-    { id: 1, name: 'Alex Morgan', email: 'alex.morgan@example.com', role: 'CANDIDATE', status: 'ACTIVE', joinedDate: '2026-08-14' },
-    { id: 2, name: 'TechCorp Recruiter', email: 'recruiter@techcorp.com', role: 'RECRUITER', status: 'ACTIVE', joinedDate: '2026-09-01' }
-  ]);
-
-  const [companies, setCompanies] = useState([
-    { id: 1, name: 'TechCorp Solutions', industry: 'Software & Cloud', verified: true, activeJobs: 4, location: 'San Francisco, CA' },
-    { id: 2, name: 'FinFlow Global', industry: 'FinTech Systems', verified: true, activeJobs: 2, location: 'New York, NY' }
-  ]);
-
-  const [moderationJobs, setModerationJobs] = useState([
-    { id: 201, title: 'Unverified Crypto Engineer', companyName: 'Unknown Startup', status: 'PENDING_APPROVAL', postedDate: '2026-10-18', reason: 'Unverified employer profile' }
-  ]);
-
-  const [categories, setCategories] = useState([
-    { id: 1, name: 'Software Development', jobCount: 42, status: 'ACTIVE' },
-    { id: 2, name: 'Data Science & AI', jobCount: 18, status: 'ACTIVE' },
-    { id: 3, name: 'Product Management', jobCount: 12, status: 'ACTIVE' }
-  ]);
+  // Database-backed states initialized to empty arrays
+  const [users, setUsers] = useState([]);
+  const [companies, setCompanies] = useState([]);
+  const [moderationJobs, setModerationJobs] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [newCategoryName, setNewCategoryName] = useState('');
 
   const [systemSettings, setSystemSettings] = useState({
@@ -39,14 +25,33 @@ export default function AdminDashboard({ jobs = [], onJobUpdated }) {
     emailAlerts: true
   });
 
-  // Fetch real analytics from backend on load
+  // Fetch real analytics and records from backend on load
   useEffect(() => {
+    // 1. Fetch Analytics
     fetch(`${API_BASE_URL}/api/admin/analytics`)
       .then(res => res.json())
       .then(data => {
         if (data) setAnalytics(data);
       })
       .catch(err => console.error("Failed to fetch admin analytics:", err));
+
+    // 2. Fetch Users from Database
+    fetch(`${API_BASE_URL}/api/users`)
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setUsers(data);
+      })
+      .catch(err => console.warn("Failed to fetch users:", err));
+
+    // 3. Fetch Companies from Database
+    fetch(`${API_BASE_URL}/api/companies`)
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setCompanies(data);
+      })
+      .catch(err => console.warn("Failed to fetch companies:", err));
+
+    // 4. Fetch Categories or Moderation queue if endpoints exist
   }, []);
 
   // User Actions
@@ -141,30 +146,34 @@ export default function AdminDashboard({ jobs = [], onJobUpdated }) {
       {activeTab === 'users' && (
         <div className="card">
           <h3 style={{ margin: '0 0 16px 0', color: 'var(--text-primary)' }}>User Account Management</h3>
-          <div style={{ display: 'grid', gap: '10px' }}>
-            {users.map(u => (
-              <div key={u.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', backgroundColor: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <strong style={{ fontSize: '15px', color: 'var(--text-primary)' }}>{u.name}</strong>
-                    <span style={roleBadgeStyle(u.role)}>{u.role}</span>
-                    <span style={{ fontSize: '11px', fontWeight: 'bold', color: u.status === 'ACTIVE' ? 'var(--accent-green)' : '#ef4444' }}>
-                      ● {u.status}
-                    </span>
+          {users.length === 0 ? (
+            <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '20px' }}>No users found in the database.</p>
+          ) : (
+            <div style={{ display: 'grid', gap: '10px' }}>
+              {users.map(u => (
+                <div key={u.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', backgroundColor: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <strong style={{ fontSize: '15px', color: 'var(--text-primary)' }}>{u.name}</strong>
+                      <span style={roleBadgeStyle(u.role)}>{u.role}</span>
+                      <span style={{ fontSize: '11px', fontWeight: 'bold', color: (u.status || 'ACTIVE') === 'ACTIVE' ? 'var(--accent-green)' : '#ef4444' }}>
+                        ● {u.status || 'ACTIVE'}
+                      </span>
+                    </div>
+                    <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{u.email}</span>
                   </div>
-                  <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{u.email} • Joined on {u.joinedDate}</span>
-                </div>
 
-                <button
-                  className="btn-secondary"
-                  onClick={() => toggleUserStatus(u.id)}
-                  style={{ fontSize: '12px', color: u.status === 'ACTIVE' ? '#ef4444' : 'var(--accent-green)' }}
-                >
-                  {u.status === 'ACTIVE' ? 'Suspend Account' : 'Reactivate Account'}
-                </button>
-              </div>
-            ))}
-          </div>
+                  <button
+                    className="btn-secondary"
+                    onClick={() => toggleUserStatus(u.id)}
+                    style={{ fontSize: '12px', color: (u.status || 'ACTIVE') === 'ACTIVE' ? '#ef4444' : 'var(--accent-green)' }}
+                  >
+                    {(u.status || 'ACTIVE') === 'ACTIVE' ? 'Suspend Account' : 'Reactivate Account'}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -172,33 +181,37 @@ export default function AdminDashboard({ jobs = [], onJobUpdated }) {
       {activeTab === 'companies' && (
         <div className="card">
           <h3 style={{ margin: '0 0 16px 0', color: 'var(--text-primary)' }}>Employer & Company Verification</h3>
-          <div style={{ display: 'grid', gap: '12px' }}>
-            {companies.map(c => (
-              <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px', backgroundColor: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <h4 style={{ margin: 0, fontSize: '16px', color: 'var(--text-primary)' }}>{c.name}</h4>
-                    {c.verified && (
-                      <span style={{ fontSize: '11px', backgroundColor: 'rgba(16, 185, 129, 0.15)', color: 'var(--accent-green)', fontWeight: 'bold', padding: '2px 8px', borderRadius: '10px' }}>
-                        ✓ Verified Partner
-                      </span>
-                    )}
+          {companies.length === 0 ? (
+            <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '20px' }}>No companies registered in the database yet.</p>
+          ) : (
+            <div style={{ display: 'grid', gap: '12px' }}>
+              {companies.map(c => (
+                <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px', backgroundColor: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <h4 style={{ margin: 0, fontSize: '16px', color: 'var(--text-primary)' }}>{c.name}</h4>
+                      {c.verified && (
+                        <span style={{ fontSize: '11px', backgroundColor: 'rgba(16, 185, 129, 0.15)', color: 'var(--accent-green)', fontWeight: 'bold', padding: '2px 8px', borderRadius: '10px' }}>
+                          ✓ Verified Partner
+                        </span>
+                      )}
+                    </div>
+                    <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: 'var(--text-secondary)' }}>
+                      📍 {c.location || 'Remote'} • {c.description || 'Enterprise Partner'}
+                    </p>
                   </div>
-                  <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: 'var(--text-secondary)' }}>
-                    {c.industry} • 📍 {c.location} • {c.activeJobs} Active Jobs Posted
-                  </p>
-                </div>
 
-                <button
-                  className="btn-secondary"
-                  onClick={() => toggleCompanyVerification(c.id)}
-                  style={{ fontSize: '12px' }}
-                >
-                  {c.verified ? 'Revoke Verification' : 'Verify Company ✓'}
-                </button>
-              </div>
-            ))}
-          </div>
+                  <button
+                    className="btn-secondary"
+                    onClick={() => toggleCompanyVerification(c.id)}
+                    style={{ fontSize: '12px' }}
+                  >
+                    {c.verified ? 'Revoke Verification' : 'Verify Company ✓'}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -221,10 +234,10 @@ export default function AdminDashboard({ jobs = [], onJobUpdated }) {
                       </span>
                       <h4 style={{ margin: '8px 0 4px 0', fontSize: '18px', color: 'var(--text-primary)' }}>{job.title}</h4>
                       <p style={{ margin: '0 0 8px 0', fontSize: '13px', color: 'var(--text-secondary)' }}>
-                        Company: <strong>{job.companyName}</strong> • Submitted: {job.postedDate}
+                        Company: <strong>{job.companyName}</strong>
                       </p>
                       <div style={{ padding: '8px 12px', backgroundColor: 'var(--bg-secondary)', borderRadius: '6px', fontSize: '12px', color: 'var(--text-secondary)' }}>
-                        <strong>Reason Flagged:</strong> {job.reason}
+                        <strong>Reason Flagged:</strong> {job.reason || 'Pending manual review'}
                       </div>
                     </div>
 
@@ -262,23 +275,27 @@ export default function AdminDashboard({ jobs = [], onJobUpdated }) {
             </button>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px' }}>
-            {categories.map(cat => (
-              <div key={cat.id} style={{ padding: '14px', backgroundColor: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <strong style={{ fontSize: '14px', color: 'var(--text-primary)' }}>{cat.name}</strong>
-                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>{cat.jobCount} Jobs Active</div>
+          {categories.length === 0 ? (
+            <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '20px' }}>No categories created yet.</p>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px' }}>
+              {categories.map(cat => (
+                <div key={cat.id} style={{ padding: '14px', backgroundColor: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <strong style={{ fontSize: '14px', color: 'var(--text-primary)' }}>{cat.name}</strong>
+                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>{cat.jobCount} Jobs Active</div>
+                  </div>
+                  <button
+                    className="btn-secondary"
+                    onClick={() => handleRemoveCategory(cat.id)}
+                    style={{ fontSize: '11px', color: '#ef4444', padding: '4px 8px' }}
+                  >
+                    Remove ✕
+                  </button>
                 </div>
-                <button
-                  className="btn-secondary"
-                  onClick={() => handleRemoveCategory(cat.id)}
-                  style={{ fontSize: '11px', color: '#ef4444', padding: '4px 8px' }}
-                >
-                  Remove ✕
-                </button>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
