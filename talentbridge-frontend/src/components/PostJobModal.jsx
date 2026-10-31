@@ -31,13 +31,11 @@ export default function PostJobModal({ isOpen, onClose, onJobPosted, user }) {
 
     const companyName = user?.companyName || user?.company || user?.name || 'Partner Company';
 
-    // Safely convert companyId to a positive Long (defaults to 1 if null/NaN to satisfy MySQL constraints)
+    // Convert companyId safely to numeric Long (or null)
     const rawCompanyId = user?.companyId || user?.id;
-    const parsedCompanyId = rawCompanyId && !isNaN(rawCompanyId) && Number(rawCompanyId) > 0
-      ? Number(rawCompanyId)
-      : 1;
+    const parsedCompanyId = rawCompanyId && !isNaN(rawCompanyId) ? Number(rawCompanyId) : null;
 
-    // Build payload strictly matching all fields in Job.java entity
+    // Strict payload format compatible with Jackson & Spring Data JPA
     const jobPayload = {
       title: title.trim(),
       description: description.trim().slice(0, 2000),
@@ -46,15 +44,15 @@ export default function PostJobModal({ isOpen, onClose, onJobPosted, user }) {
       employmentType: type,
       workplaceType: workplaceType,
       experienceLevel: experienceLevel,
-      salaryMin: 0.0,
+      salaryMin: null,
       salaryRange: salaryRange.trim() || 'Competitive',
       companyName: companyName,
       companyId: parsedCompanyId,
-      companyDescription: (user?.companyDescription || 'Hiring employer partner on TalentBridge.').slice(0, 1000),
-      requirements: requirements.trim().slice(0, 2000),
-      skills: skills.trim().slice(0, 1000),
+      companyDescription: (user?.companyDescription || 'Hiring partner on TalentBridge').slice(0, 1000),
+      requirements: (requirements.trim() || 'Not specified').slice(0, 2000),
+      skills: (skills.trim() || 'Not specified').slice(0, 1000),
       status: 'Active',
-      postedDate: new Date().toISOString().split('T')[0]
+      postedDate: new Date().toISOString() // ISO format satisfies both String and DATETIME column mappings
     };
 
     try {
@@ -69,7 +67,7 @@ export default function PostJobModal({ isOpen, onClose, onJobPosted, user }) {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Spring Boot error response:', errorText);
+        console.error('Spring Boot raw error trace:', errorText);
         throw new Error(`Server returned status ${response.status}`);
       }
 
@@ -81,7 +79,7 @@ export default function PostJobModal({ isOpen, onClose, onJobPosted, user }) {
 
       if (addToast) addToast('🎉 Job listing published successfully!', 'success');
 
-      // Reset form
+      // Reset form fields
       setTitle('');
       setLocation('');
       setSalaryRange('');
