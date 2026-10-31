@@ -10,6 +10,8 @@ export default function PostJobModal({ isOpen, onClose, onJobPosted, user }) {
   const [workplaceType, setWorkplaceType] = useState('Remote');
   const [experienceLevel, setExperienceLevel] = useState('Mid');
   const [salaryRange, setSalaryRange] = useState('');
+  const [requirements, setRequirements] = useState('');
+  const [skills, setSkills] = useState('');
   const [description, setDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -28,15 +30,20 @@ export default function PostJobModal({ isOpen, onClose, onJobPosted, user }) {
     setIsSubmitting(true);
 
     const companyName = user?.companyName || user?.company || user?.name || 'Partner Company';
+    const companyId = user?.companyId || user?.id || null;
 
     const jobPayload = {
       title: title.trim(),
       companyName: companyName,
+      companyId: companyId,
       location: location.trim(),
-      type,
-      workplaceType,
-      experienceLevel,
+      type: type,
+      employmentType: type, // Syncs with both type fields in Job.java entity
+      workplaceType: workplaceType,
+      experienceLevel: experienceLevel,
       salaryRange: salaryRange.trim() || 'Competitive / Unspecified',
+      requirements: requirements.trim(),
+      skills: skills.trim(),
       description: description.trim(),
       status: 'Active',
       postedDate: new Date().toISOString().split('T')[0]
@@ -52,7 +59,7 @@ export default function PostJobModal({ isOpen, onClose, onJobPosted, user }) {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to persist job listing to backend database.');
+        throw new Error(errorData.message || errorData.error || 'Failed to persist job listing to backend database.');
       }
 
       const savedJob = await response.json();
@@ -68,6 +75,8 @@ export default function PostJobModal({ isOpen, onClose, onJobPosted, user }) {
       setTitle('');
       setLocation('');
       setSalaryRange('');
+      setRequirements('');
+      setSkills('');
       setDescription('');
       onClose();
     } catch (err) {
@@ -90,7 +99,7 @@ export default function PostJobModal({ isOpen, onClose, onJobPosted, user }) {
           <button onClick={onClose} style={closeXStyle}>✕</button>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '12px' }}>
+        <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '12px', maxHeight: '75vh', overflowY: 'auto', paddingRight: '4px' }}>
           <div>
             <label style={labelStyle}>Job Title *</label>
             <input
@@ -158,11 +167,33 @@ export default function PostJobModal({ isOpen, onClose, onJobPosted, user }) {
           </div>
 
           <div>
+            <label style={labelStyle}>Key Requirements (comma or period separated)</label>
+            <input
+              type="text"
+              placeholder="e.g. 3+ years React, Spring Boot, MySQL experience"
+              value={requirements}
+              onChange={(e) => setRequirements(e.target.value)}
+              style={inputStyle}
+            />
+          </div>
+
+          <div>
+            <label style={labelStyle}>Technical Skills (comma separated)</label>
+            <input
+              type="text"
+              placeholder="e.g. Java, React, SQL, Git"
+              value={skills}
+              onChange={(e) => setSkills(e.target.value)}
+              style={inputStyle}
+            />
+          </div>
+
+          <div>
             <label style={labelStyle}>Job Description *</label>
             <textarea
               rows={4}
               required
-              placeholder="Outline responsibilities, requirements, and qualifications..."
+              placeholder="Outline responsibilities and role context..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               style={inputStyle}
@@ -184,7 +215,7 @@ export default function PostJobModal({ isOpen, onClose, onJobPosted, user }) {
 }
 
 const overlayStyle = { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.65)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 };
-const modalStyle = { backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', padding: '24px', borderRadius: '14px', width: '500px', maxWidth: '90vw', color: 'var(--text-primary)' };
+const modalStyle = { backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', padding: '24px', borderRadius: '14px', width: '520px', maxWidth: '90vw', color: 'var(--text-primary)' };
 const labelStyle = { fontSize: '12px', fontWeight: 'bold', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' };
 const inputStyle = { width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)', fontSize: '13px', outline: 'none' };
 const closeXStyle = { background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: '18px', cursor: 'pointer' };
