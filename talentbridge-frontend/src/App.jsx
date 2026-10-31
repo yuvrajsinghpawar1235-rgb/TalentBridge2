@@ -104,23 +104,9 @@ export default function App() {
       });
   };
 
-  // Fetch candidate applications to build dynamic notifications (Safely handles Demo Accounts)
+  // Fetch candidate applications to build dynamic notifications
   useEffect(() => {
     if (user && user.id && user.role === 'CANDIDATE') {
-      // Handles demo candidate session notifications
-      if (String(user.id).startsWith('999')) {
-        setUserNotifications([
-          {
-            id: 1,
-            title: 'Welcome to TalentBridge Demo!',
-            message: 'You are currently logged in with a demo candidate account.',
-            time: 'Just now',
-            unread: true
-          }
-        ]);
-        return;
-      }
-
       fetch(`${API_BASE_URL}/api/applications/candidate/${user.id}`)
         .then((res) => res.json())
         .then((data) => {
@@ -138,7 +124,7 @@ export default function App() {
               {
                 id: 1,
                 title: 'Welcome to TalentBridge!',
-                message: 'Your candidate account is fully active.',
+                message: 'Your candidate account is active.',
                 time: 'Just now',
                 unread: true
               }
@@ -499,6 +485,34 @@ export default function App() {
         userRole={user?.role || 'CANDIDATE'}
         isSaved={selectedJob ? savedJobs.some((j) => j.id === selectedJob.id) : false}
         onToggleSave={handleToggleSaveJob}
+        onApply={async (jobToApply) => {
+          if (!user) {
+            addToast('Please sign in as a candidate to apply.', 'info');
+            openAuthForRole('CANDIDATE', true);
+            return;
+          }
+
+          try {
+            const response = await fetch(`${API_BASE_URL}/api/applications`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                candidateId: user.id,
+                jobId: jobToApply.id,
+                stage: 'APPLIED',
+                appliedAt: new Date().toISOString()
+              })
+            });
+
+            if (!response.ok) {
+              throw new Error('Failed to submit application to the server.');
+            }
+
+            addToast(`🎉 Successfully applied for ${jobToApply.title}!`, 'success');
+          } catch (err) {
+            addToast(err.message || 'Error submitting application', 'error');
+          }
+        }}
       />
 
       <ConfirmModal
@@ -515,7 +529,7 @@ export default function App() {
 }
 
 // Helpers & Styles
-const headerStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 0', borderBottom: '1px solid var(--border-color)' };
+const headerStyle = { display: 'flex', justifyContent: 'space-system', alignItems: 'center', padding: '20px 0', borderBottom: '1px solid var(--border-color)' };
 const navLinkStyle = { fontSize: '14px', fontWeight: '600', cursor: 'pointer', transition: 'color 0.2s ease' };
 const heroSectionStyle = { textAlign: 'center', padding: '40px 0 20px 0' };
 const pillBadgeStyle = { display: 'inline-block', backgroundColor: 'var(--badge-bg)', color: 'var(--primary-accent)', padding: '6px 16px', borderRadius: '20px', fontSize: '12px', fontWeight: '700', marginBottom: '20px' };

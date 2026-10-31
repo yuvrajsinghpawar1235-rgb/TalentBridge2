@@ -38,24 +38,27 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, initialRol
 
   const theme = getRoleTheme();
 
-  // One-Click Demo Login Handler
+  // One-Click Demo Login Handler with database-compatible fields
   const handleDemoLogin = (demoRole) => {
     const demoAccounts = {
       CANDIDATE: {
-        id: 9991,
+        id: 1,
         name: 'Demo Candidate',
         email: 'demo.candidate@talentbridge.com',
-        role: 'CANDIDATE'
+        role: 'CANDIDATE',
+        skills: 'React, JavaScript, Node.js',
+        experience: '2 Years'
       },
       RECRUITER: {
-        id: 9992,
+        id: 2,
         name: 'Demo Recruiter',
         email: 'demo.recruiter@talentbridge.com',
         role: 'RECRUITER',
-        companyName: 'TechCorp Solutions'
+        companyName: 'TechCorp Solutions',
+        company: 'TechCorp Solutions'
       },
       ADMIN: {
-        id: 9993,
+        id: 3,
         name: 'Master Administrator',
         email: 'admin@talentbridge.com',
         role: 'ADMIN'
@@ -216,7 +219,6 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, initialRol
               </button>
             </form>
 
-            {/* Quick Demo Login Shortcuts */}
             <div style={demoSectionStyle}>
               <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                 ⚡ Quick Demo Preview
