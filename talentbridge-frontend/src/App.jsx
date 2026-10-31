@@ -204,8 +204,9 @@ export default function App() {
 
   return (
     <div className="container" style={{ paddingBottom: '60px' }}>
-      {/* Header Bar */}
+      {/* Header Bar - Uses space-between across 2 child divs */}
       <header style={headerStyle}>
+        {/* Child 1: Left Container (Logo + Nav Links) */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
           <h1
             onClick={() => { setActiveTab('landing'); setSelectedCompanyFilter(null); }}
@@ -246,6 +247,7 @@ export default function App() {
           </nav>
         </div>
 
+        {/* Child 2: Right Container (Dark Mode + Actions) */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <button onClick={toggleTheme} className="btn-secondary" style={{ borderRadius: '20px', padding: '6px 14px' }}>
             {theme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode'}
@@ -529,7 +531,7 @@ export default function App() {
 }
 
 // Helpers & Styles
-const headerStyle = { display: 'flex', justifyContent: 'space-system', alignItems: 'center', padding: '20px 0', borderBottom: '1px solid var(--border-color)' };
+const headerStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 0', borderBottom: '1px solid var(--border-color)' };
 const navLinkStyle = { fontSize: '14px', fontWeight: '600', cursor: 'pointer', transition: 'color 0.2s ease' };
 const heroSectionStyle = { textAlign: 'center', padding: '40px 0 20px 0' };
 const pillBadgeStyle = { display: 'inline-block', backgroundColor: 'var(--badge-bg)', color: 'var(--primary-accent)', padding: '6px 16px', borderRadius: '20px', fontSize: '12px', fontWeight: '700', marginBottom: '20px' };
