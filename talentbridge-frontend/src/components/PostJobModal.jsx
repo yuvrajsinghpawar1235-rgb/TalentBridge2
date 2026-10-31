@@ -30,48 +30,58 @@ export default function PostJobModal({ isOpen, onClose, onJobPosted, user }) {
     setIsSubmitting(true);
 
     const companyName = user?.companyName || user?.company || user?.name || 'Partner Company';
-    const companyId = user?.companyId || user?.id || null;
 
+    // Safely convert companyId to a positive Long (defaults to 1 if null/NaN to satisfy MySQL constraints)
+    const rawCompanyId = user?.companyId || user?.id;
+    const parsedCompanyId = rawCompanyId && !isNaN(rawCompanyId) && Number(rawCompanyId) > 0
+      ? Number(rawCompanyId)
+      : 1;
+
+    // Build payload strictly matching all fields in Job.java entity
     const jobPayload = {
       title: title.trim(),
-      companyName: companyName,
-      companyId: companyId,
+      description: description.trim().slice(0, 2000),
       location: location.trim(),
       type: type,
-      employmentType: type, // Syncs with both type fields in Job.java entity
+      employmentType: type,
       workplaceType: workplaceType,
       experienceLevel: experienceLevel,
-      salaryRange: salaryRange.trim() || 'Competitive / Unspecified',
-      requirements: requirements.trim(),
-      skills: skills.trim(),
-      description: description.trim(),
+      salaryMin: 0.0,
+      salaryRange: salaryRange.trim() || 'Competitive',
+      companyName: companyName,
+      companyId: parsedCompanyId,
+      companyDescription: (user?.companyDescription || 'Hiring employer partner on TalentBridge.').slice(0, 1000),
+      requirements: requirements.trim().slice(0, 2000),
+      skills: skills.trim().slice(0, 1000),
       status: 'Active',
       postedDate: new Date().toISOString().split('T')[0]
     };
 
     try {
-      // Send POST request directly to MySQL Spring Boot backend
       const response = await fetch(`${API_BASE_URL}/api/jobs`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
         body: JSON.stringify(jobPayload)
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || errorData.error || 'Failed to persist job listing to backend database.');
+        const errorText = await response.text();
+        console.error('Spring Boot error response:', errorText);
+        throw new Error(`Server returned status ${response.status}`);
       }
 
       const savedJob = await response.json();
 
-      // Trigger parent callback with live MySQL record
       if (onJobPosted) {
         onJobPosted(savedJob);
       }
 
-      if (addToast) addToast('🎉 Job listing published successfully to live database!', 'success');
+      if (addToast) addToast('🎉 Job listing published successfully!', 'success');
 
-      // Reset form fields
+      // Reset form
       setTitle('');
       setLocation('');
       setSalaryRange('');
@@ -80,11 +90,9 @@ export default function PostJobModal({ isOpen, onClose, onJobPosted, user }) {
       setDescription('');
       onClose();
     } catch (err) {
-      console.error('Error posting job to database:', err);
+      console.error('Error posting job:', err);
       if (addToast) {
         addToast(`Error: ${err.message}`, 'error');
-      } else {
-        alert(`Error publishing job: ${err.message}`);
       }
     } finally {
       setIsSubmitting(false);
@@ -167,10 +175,10 @@ export default function PostJobModal({ isOpen, onClose, onJobPosted, user }) {
           </div>
 
           <div>
-            <label style={labelStyle}>Key Requirements (comma or period separated)</label>
+            <label style={labelStyle}>Key Requirements</label>
             <input
               type="text"
-              placeholder="e.g. 3+ years React, Spring Boot, MySQL experience"
+              placeholder="e.g. 3+ years experience with Java, Spring Boot, MySQL"
               value={requirements}
               onChange={(e) => setRequirements(e.target.value)}
               style={inputStyle}
@@ -178,10 +186,10 @@ export default function PostJobModal({ isOpen, onClose, onJobPosted, user }) {
           </div>
 
           <div>
-            <label style={labelStyle}>Technical Skills (comma separated)</label>
+            <label style={labelStyle}>Technical Skills</label>
             <input
               type="text"
-              placeholder="e.g. Java, React, SQL, Git"
+              placeholder="e.g. Java, React, MySQL, REST API"
               value={skills}
               onChange={(e) => setSkills(e.target.value)}
               style={inputStyle}
@@ -193,7 +201,7 @@ export default function PostJobModal({ isOpen, onClose, onJobPosted, user }) {
             <textarea
               rows={4}
               required
-              placeholder="Outline responsibilities and role context..."
+              placeholder="Outline responsibilities and role requirements..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               style={inputStyle}
