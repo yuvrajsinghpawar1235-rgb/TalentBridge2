@@ -31,11 +31,13 @@ export default function PostJobModal({ isOpen, onClose, onJobPosted, user }) {
 
     const companyName = user?.companyName || user?.company || user?.name || 'Partner Company';
 
-    // Convert companyId safely to numeric Long (or null)
+    // Safely parse companyId or set to null so it inserts cleanly if optional in Aiven MySQL
     const rawCompanyId = user?.companyId || user?.id;
-    const parsedCompanyId = rawCompanyId && !isNaN(rawCompanyId) ? Number(rawCompanyId) : null;
+    const parsedCompanyId = rawCompanyId && !isNaN(rawCompanyId) && Number(rawCompanyId) > 0
+      ? Number(rawCompanyId)
+      : null;
 
-    // Strict payload format compatible with Jackson & Spring Data JPA
+    // Strict payload matching Job.java entity structure
     const jobPayload = {
       title: title.trim(),
       description: description.trim().slice(0, 2000),
@@ -52,7 +54,7 @@ export default function PostJobModal({ isOpen, onClose, onJobPosted, user }) {
       requirements: (requirements.trim() || 'Not specified').slice(0, 2000),
       skills: (skills.trim() || 'Not specified').slice(0, 1000),
       status: 'Active',
-      postedDate: new Date().toISOString() // ISO format satisfies both String and DATETIME column mappings
+      postedDate: new Date().toISOString()
     };
 
     try {
@@ -67,7 +69,7 @@ export default function PostJobModal({ isOpen, onClose, onJobPosted, user }) {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Spring Boot raw error trace:', errorText);
+        console.error('Spring Boot error response:', errorText);
         throw new Error(`Server returned status ${response.status}`);
       }
 
@@ -77,7 +79,7 @@ export default function PostJobModal({ isOpen, onClose, onJobPosted, user }) {
         onJobPosted(savedJob);
       }
 
-      if (addToast) addToast('🎉 Job listing published successfully!', 'success');
+      if (addToast) addToast('🎉 Job listing published successfully to database!', 'success');
 
       // Reset form fields
       setTitle('');
