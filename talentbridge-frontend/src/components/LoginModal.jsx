@@ -38,6 +38,36 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, initialRol
 
   const theme = getRoleTheme();
 
+  // One-Click Demo Login Handler
+  const handleDemoLogin = (demoRole) => {
+    const demoAccounts = {
+      CANDIDATE: {
+        id: 9991,
+        name: 'Demo Candidate',
+        email: 'demo.candidate@talentbridge.com',
+        role: 'CANDIDATE'
+      },
+      RECRUITER: {
+        id: 9992,
+        name: 'Demo Recruiter',
+        email: 'demo.recruiter@talentbridge.com',
+        role: 'RECRUITER',
+        companyName: 'TechCorp Solutions'
+      },
+      ADMIN: {
+        id: 9993,
+        name: 'Master Administrator',
+        email: 'admin@talentbridge.com',
+        role: 'ADMIN'
+      }
+    };
+
+    const selectedDemoUser = demoAccounts[demoRole] || demoAccounts.CANDIDATE;
+    localStorage.setItem('user', JSON.stringify(selectedDemoUser));
+    onLoginSuccess(selectedDemoUser);
+    onClose();
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -186,7 +216,25 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, initialRol
               </button>
             </form>
 
-            <p style={{ marginTop: '20px', textAlign: 'center', fontSize: '13px', color: 'var(--text-secondary)', marginBottom: 0 }}>
+            {/* Quick Demo Login Shortcuts */}
+            <div style={demoSectionStyle}>
+              <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                ⚡ Quick Demo Preview
+              </span>
+              <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                <button type="button" onClick={() => handleDemoLogin('CANDIDATE')} style={demoBtnStyle('var(--primary-accent, #2563eb)')}>
+                  👤 Candidate
+                </button>
+                <button type="button" onClick={() => handleDemoLogin('RECRUITER')} style={demoBtnStyle('var(--accent-green, #10b981)')}>
+                  💼 Recruiter
+                </button>
+                <button type="button" onClick={() => handleDemoLogin('ADMIN')} style={demoBtnStyle('var(--accent-purple, #a855f7)')}>
+                  🛡️ Admin
+                </button>
+              </div>
+            </div>
+
+            <p style={{ marginTop: '16px', textAlign: 'center', fontSize: '13px', color: 'var(--text-secondary)', marginBottom: 0 }}>
               {view === 'REGISTER' ? 'Already have an account?' : "Don't have an account?"}{' '}
               <span
                 onClick={() => setView(view === 'REGISTER' ? 'LOGIN' : 'REGISTER')}
@@ -211,3 +259,16 @@ const inputStyle = { padding: '9px 12px', borderRadius: '6px', border: '1px soli
 const submitBtnStyle = { width: '100%', padding: '10px', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '700', fontSize: '14px', marginTop: '6px' };
 const linkBtnStyle = { marginTop: '12px', width: '100%', padding: '8px', backgroundColor: 'transparent', color: 'var(--text-secondary)', border: 'none', cursor: 'pointer', fontSize: '13px', textAlign: 'center' };
 const closeXStyle = { background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: '16px', cursor: 'pointer' };
+const demoSectionStyle = { marginTop: '16px', paddingTop: '14px', borderTop: '1px dashed var(--border-color)', textAlign: 'center' };
+const demoBtnStyle = (color) => ({
+  flex: 1,
+  padding: '6px 8px',
+  fontSize: '11px',
+  fontWeight: '700',
+  borderRadius: '6px',
+  border: `1px solid ${color}`,
+  backgroundColor: 'transparent',
+  color: color,
+  cursor: 'pointer',
+  transition: 'all 0.2s ease'
+});

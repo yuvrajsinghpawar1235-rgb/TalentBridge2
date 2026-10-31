@@ -104,9 +104,23 @@ export default function App() {
       });
   };
 
-  // Fetch candidate applications to build dynamic notifications
+  // Fetch candidate applications to build dynamic notifications (Safely handles Demo Accounts)
   useEffect(() => {
     if (user && user.id && user.role === 'CANDIDATE') {
+      // Handles demo candidate session notifications
+      if (String(user.id).startsWith('999')) {
+        setUserNotifications([
+          {
+            id: 1,
+            title: 'Welcome to TalentBridge Demo!',
+            message: 'You are currently logged in with a demo candidate account.',
+            time: 'Just now',
+            unread: true
+          }
+        ]);
+        return;
+      }
+
       fetch(`${API_BASE_URL}/api/applications/candidate/${user.id}`)
         .then((res) => res.json())
         .then((data) => {
