@@ -12,6 +12,7 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, initialRol
   });
   const [resetEmail, setResetEmail] = useState('');
   const [error, setError] = useState('');
+  const [isLoadingDemo, setIsLoadingDemo] = useState(false);
 
   useEffect(() => {
     setRole(initialRole);
@@ -38,37 +39,41 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, initialRol
 
   const theme = getRoleTheme();
 
-  // One-Click Demo Login Handler with database-compatible fields
-  const handleDemoLogin = (demoRole) => {
-    const demoAccounts = {
-      CANDIDATE: {
-        id: 1,
-        name: 'Demo Candidate',
-        email: 'demo.candidate@talentbridge.com',
-        role: 'CANDIDATE',
-        skills: 'React, JavaScript, Node.js',
-        experience: '2 Years'
-      },
-      RECRUITER: {
-        id: 2,
-        name: 'Demo Recruiter',
-        email: 'demo.recruiter@talentbridge.com',
-        role: 'RECRUITER',
-        companyName: 'TechCorp Solutions',
-        company: 'TechCorp Solutions'
-      },
-      ADMIN: {
-        id: 3,
-        name: 'Master Administrator',
-        email: 'admin@talentbridge.com',
-        role: 'ADMIN'
-      }
+  // Database-Synced Quick Demo Login Handler
+  const handleDemoLogin = async (demoRole) => {
+    setError('');
+    setIsLoadingDemo(true);
+
+    // Map roles to pre-seeded default demo credentials in your MySQL database
+    const demoCredentials = {
+      CANDIDATE: { email: 'demo.candidate@talentbridge.com', password: 'password123' },
+      RECRUITER: { email: 'demo.recruiter@talentbridge.com', password: 'password123' },
+      ADMIN: { email: 'admin@talentbridge.com', password: 'password123' }
     };
 
-    const selectedDemoUser = demoAccounts[demoRole] || demoAccounts.CANDIDATE;
-    localStorage.setItem('user', JSON.stringify(selectedDemoUser));
-    onLoginSuccess(selectedDemoUser);
-    onClose();
+    const credentials = demoCredentials[demoRole] || demoCredentials.CANDIDATE;
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(credentials)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Demo account not found in MySQL. Please register this email first.');
+      }
+
+      localStorage.setItem('user', JSON.stringify(data));
+      onLoginSuccess(data);
+      onClose();
+    } catch (err) {
+      setError(`Demo Login Failed: ${err.message}`);
+    } finally {
+      setIsLoadingDemo(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -221,16 +226,16 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, initialRol
 
             <div style={demoSectionStyle}>
               <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                ⚡ Quick Demo Preview
+                {isLoadingDemo ? 'Connecting to MySQL...' : '⚡ Quick Demo Preview'}
               </span>
               <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-                <button type="button" onClick={() => handleDemoLogin('CANDIDATE')} style={demoBtnStyle('var(--primary-accent, #2563eb)')}>
+                <button type="button" disabled={isLoadingDemo} onClick={() => handleDemoLogin('CANDIDATE')} style={demoBtnStyle('var(--primary-accent, #2563eb)')}>
                   👤 Candidate
                 </button>
-                <button type="button" onClick={() => handleDemoLogin('RECRUITER')} style={demoBtnStyle('var(--accent-green, #10b981)')}>
+                <button type="button" disabled={isLoadingDemo} onClick={() => handleDemoLogin('RECRUITER')} style={demoBtnStyle('var(--accent-green, #10b981)')}>
                   💼 Recruiter
                 </button>
-                <button type="button" onClick={() => handleDemoLogin('ADMIN')} style={demoBtnStyle('var(--accent-purple, #a855f7)')}>
+                <button type="button" disabled={isLoadingDemo} onClick={() => handleDemoLogin('ADMIN')} style={demoBtnStyle('var(--accent-purple, #a855f7)')}>
                   🛡️ Admin
                 </button>
               </div>

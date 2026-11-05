@@ -31,15 +31,18 @@ public class User {
     private String summary;           // Professional bio / summary
 
     @Column(length = 1000)
-    private String skills;            // Comma-separated or JSON list of skills
+    private String skills;            // Comma-separated list of skills
 
     @Column(length = 2000)
     private String education;         // JSON or formatted string of education history
 
     @Column(length = 2000)
-    private String experience;        // JSON or formatted string of work experience
+    private String experience;        // Work experience or academic projects
 
     private String links;             // Portfolio / GitHub / LinkedIn URLs
+
+    private String university;        // Mapped directly to React profile form
+    private Boolean isFresher = true; // Flag for fresh graduates
 
     private Integer profileCompletion = 0; // Calculated completion percentage (0-100)
 
@@ -51,7 +54,8 @@ public class User {
     // Full Constructor
     public User(Long id, String name, String email, String password, String role,
                 String headline, String location, String summary, String skills,
-                String education, String experience, String links, Integer profileCompletion) {
+                String education, String experience, String links, String university,
+                Boolean isFresher, Integer profileCompletion) {
         this.id = id;
         this.name = name;
         this.email = email;
@@ -64,10 +68,12 @@ public class User {
         this.education = education;
         this.experience = experience;
         this.links = links;
+        this.university = university;
+        this.isFresher = isFresher != null ? isFresher : true;
         this.profileCompletion = profileCompletion != null ? profileCompletion : calculateCompletion();
     }
 
-    // Helper method to automatically calculate profile completion percentage
+    // Lifecycle hook to recalculate profile completion score before insert or update
     @PrePersist
     @PreUpdate
     public void updateCompletionScore() {
@@ -75,14 +81,14 @@ public class User {
     }
 
     private int calculateCompletion() {
-        int score = 20; // Base score for account creation (name, email, role)
-        if (headline != null && !headline.isEmpty()) score += 15;
-        if (location != null && !location.isEmpty()) score += 10;
-        if (summary != null && !summary.isEmpty()) score += 15;
-        if (skills != null && !skills.isEmpty()) score += 15;
-        if (education != null && !education.isEmpty()) score += 10;
-        if (experience != null && !experience.isEmpty()) score += 10;
-        if (links != null && !links.isEmpty()) score += 5;
+        int score = 20; // Base score for account registration
+        if (headline != null && !headline.trim().isEmpty()) score += 15;
+        if (location != null && !location.trim().isEmpty()) score += 10;
+        if (summary != null && !summary.trim().isEmpty()) score += 15;
+        if (skills != null && !skills.trim().isEmpty()) score += 15;
+        if (university != null && !university.trim().isEmpty()) score += 10;
+        if (experience != null && !experience.trim().isEmpty()) score += 10;
+        if (links != null && !links.trim().isEmpty()) score += 5;
         return Math.min(score, 100);
     }
 
@@ -122,6 +128,12 @@ public class User {
 
     public String getLinks() { return links; }
     public void setLinks(String links) { this.links = links; }
+
+    public String getUniversity() { return university; }
+    public void setUniversity(String university) { this.university = university; }
+
+    public Boolean getIsFresher() { return isFresher; }
+    public void setIsFresher(Boolean isFresher) { this.isFresher = isFresher; }
 
     public Integer getProfileCompletion() { return profileCompletion; }
     public void setProfileCompletion(Integer profileCompletion) { this.profileCompletion = profileCompletion; }

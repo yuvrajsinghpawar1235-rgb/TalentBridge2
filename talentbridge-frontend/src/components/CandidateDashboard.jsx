@@ -9,16 +9,22 @@ export default function CandidateDashboard({ jobs, user, savedJobs, onToggleSave
   const [profile, setProfile] = useState({
     name: user?.name || '',
     email: user?.email || '',
-    title: user?.title || '',
+    title: user?.title || user?.headline || '',
     university: user?.university || '',
     isFresher: user?.isFresher ?? true,
-    latestExperience: user?.latestExperience || '',
-    bio: user?.bio || '',
-    skills: user?.skills || []
+    latestExperience: user?.latestExperience || user?.experience || '',
+    bio: user?.bio || user?.summary || '',
+    skills: Array.isArray(user?.skills)
+      ? user.skills
+      : typeof user?.skills === 'string' && user.skills.trim().length > 0
+      ? user.skills.split(',').map(s => s.trim())
+      : []
   });
 
   const [newSkillInput, setNewSkillInput] = useState('');
   const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [profileMessage, setProfileMessage] = useState('');
 
   // 2. RESUME STATE
   const [resumeFile, setResumeFile] = useState({
@@ -35,7 +41,12 @@ export default function CandidateDashboard({ jobs, user, savedJobs, onToggleSave
   // Fetch candidate-specific applications on load / user change
   useEffect(() => {
     if (user && user.id) {
-      fetch(`${API_BASE_URL}/api/applications/candidate/${user.id}`)
+      const token = localStorage.getItem('jwtToken');
+      fetch(`${API_BASE_URL}/api/applications/candidate/${user.id}`, {
+        headers: {
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        }
+      })
         .then(res => res.json())
         .then(data => {
           if (Array.isArray(data)) {
@@ -77,6 +88,54 @@ export default function CandidateDashboard({ jobs, user, savedJobs, onToggleSave
 
   const handleRemoveSkill = (skillToRemove) => {
     setProfile({ ...profile, skills: profile.skills.filter(s => s !== skillToRemove) });
+  };
+
+  // Persist Profile Edits directly to MySQL Backend
+  const handleSaveProfileSubmit = async (e) => {
+    e.preventDefault();
+    if (!user || !user.id) return;
+
+    setIsSavingProfile(true);
+    setProfileMessage('');
+
+    const token = localStorage.getItem('jwtToken');
+    const payload = {
+      ...user,
+      name: profile.name,
+      headline: profile.title,
+      summary: profile.bio,
+      skills: Array.isArray(profile.skills) ? profile.skills.join(', ') : profile.skills,
+      experience: profile.latestExperience,
+      university: profile.university,
+      isFresher: profile.isFresher
+    };
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/users/${user.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update candidate profile in database.');
+      }
+
+      const updatedUser = await response.json();
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+
+      setProfileMessage('✓ Profile successfully updated in MySQL database!');
+      setIsEditingProfile(false);
+      setTimeout(() => setProfileMessage(''), 4000);
+    } catch (err) {
+      console.error('Error saving profile:', err);
+      setProfileMessage(`Error: ${err.message}`);
+    } finally {
+      setIsSavingProfile(false);
+    }
   };
 
   // Resume Upload Handler
@@ -129,6 +188,12 @@ export default function CandidateDashboard({ jobs, user, savedJobs, onToggleSave
         <button onClick={() => setActiveTab('notifications')} style={subnavTabStyle(activeTab === 'notifications')}>🔔 Notifications ({notifications.filter(n => !n.read).length})</button>
       </div>
 
+      {profileMessage && (
+        <div style={{ marginBottom: '16px', padding: '12px 16px', borderRadius: '8px', backgroundColor: profileMessage.includes('Error') ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)', color: profileMessage.includes('Error') ? '#ef4444' : 'var(--accent-green)', fontSize: '13px', fontWeight: 'bold' }}>
+          {profileMessage}
+        </div>
+      )}
+
       {/* OVERVIEW TAB */}
       {activeTab === 'dashboard' && (
         <div>
@@ -177,7 +242,7 @@ export default function CandidateDashboard({ jobs, user, savedJobs, onToggleSave
               </div>
               <div>
                 <h3 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '20px' }}>Candidate Profile Overview</h3>
-                <span style={{ fontSize: '12px', color: 'var(--accent-green)', fontWeight: 'bold' }}>● Verified Talent Profile</span>
+                <span style={{ fontSize: '12px', color: 'var(--accent-green)', fontWeight: 'bold' }}>● Verified MySQL Talent Profile</span>
               </div>
             </div>
             <button className="btn-secondary" onClick={() => setIsEditingProfile(!isEditingProfile)} style={{ fontSize: '12px' }}>
@@ -186,11 +251,11 @@ export default function CandidateDashboard({ jobs, user, savedJobs, onToggleSave
           </div>
 
           {isEditingProfile ? (
-            <form onSubmit={(e) => { e.preventDefault(); setIsEditingProfile(false); }}>
+            <form onSubmit={handleSaveProfileSubmit}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
                 <div style={inputGroupStyle}>
                   <label style={labelStyle}>Full Name</label>
-                  <input type="text" value={profile.name} onChange={(e) => setProfile({ ...profile, name: e.target.value })} style={inputStyle} placeholder="Enter full name" />
+                  <input type="text" value={profile.name} onChange={(e) => setProfile({ ...profile, name: e.target.value })} style={inputStyle} placeholder="Enter full name" required />
                 </div>
                 <div style={inputGroupStyle}>
                   <label style={labelStyle}>Professional Title</label>
@@ -235,7 +300,9 @@ export default function CandidateDashboard({ jobs, user, savedJobs, onToggleSave
                 </div>
               </div>
 
-              <button type="submit" className="btn-primary" style={{ width: '100%', marginTop: '10px' }}>Save Profile Changes</button>
+              <button type="submit" className="btn-primary" style={{ width: '100%', marginTop: '10px' }} disabled={isSavingProfile}>
+                {isSavingProfile ? 'Saving to Database...' : 'Save Profile Changes to MySQL'}
+              </button>
             </form>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -491,29 +558,4 @@ export default function CandidateDashboard({ jobs, user, savedJobs, onToggleSave
 }
 
 // Helpers & Styles
-const subnavStyle = { display: 'flex', gap: '8px', marginBottom: '25px', overflowX: 'auto', paddingBottom: '6px' };
-const subnavTabStyle = (isActive) => ({ padding: '8px 16px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: isActive ? 'var(--primary-accent)' : 'var(--bg-card)', color: isActive ? '#fff' : 'var(--text-primary)', fontSize: '13px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' });
-const welcomeBannerStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--bg-secondary)', padding: '24px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '20px' };
-const metricsGridStyle = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginBottom: '25px' };
-const statCardStyle = { padding: '16px' };
-const statLabelStyle = { fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '600' };
-const statValueStyle = { fontSize: '24px', fontWeight: '800', margin: '6px 0 0 0', color: 'var(--text-primary)' };
-const inputGroupStyle = { marginBottom: '12px', display: 'flex', flexDirection: 'column' };
-const labelStyle = { fontSize: '12px', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '4px' };
-const inputStyle = { padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)', fontSize: '14px', outline: 'none' };
-const skillBadgeStyle = { backgroundColor: 'var(--badge-bg)', color: 'var(--primary-accent)', fontSize: '12px', fontWeight: 'bold', padding: '6px 12px', borderRadius: '12px', display: 'inline-flex', alignItems: 'center' };
-const resumeBoxStyle = { display: 'flex', alignItems: 'center', gap: '14px', padding: '16px', backgroundColor: 'var(--bg-secondary)', borderRadius: '10px', border: '1px solid var(--border-color)' };
-const stageBadgeStyle = (stage) => ({
-  backgroundColor: stage === 'ACCEPTED' ? 'rgba(16, 185, 129, 0.15)' : stage === 'OFFER' ? 'rgba(16, 185, 129, 0.15)' : stage === 'INTERVIEW' ? 'rgba(245, 158, 11, 0.15)' : 'var(--badge-bg)',
-  color: stage === 'ACCEPTED' ? 'var(--accent-green)' : stage === 'OFFER' ? 'var(--accent-green)' : stage === 'INTERVIEW' ? '#f59e0b' : 'var(--primary-accent)',
-  fontSize: '11px',
-  fontWeight: 'bold',
-  padding: '4px 10px',
-  borderRadius: '12px'
-});
-const overlayStyle = { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.65)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 };
-const modalStyle = { backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', padding: '24px', borderRadius: '14px', width: '420px', color: 'var(--text-primary)' };
-const sectionHeaderStyle = { fontSize: '14px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '8px' };
-const closeXStyle = { background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: '18px', cursor: 'pointer' };
-const avatarCircleStyle = { width: '48px', height: '48px', borderRadius: '50%', backgroundColor: 'var(--primary-accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: 'bold' };
-const subCardStyle = { backgroundColor: 'var(--bg-secondary)', padding: '14px', borderRadius: '10px', border: '1px solid var(--border-color)' };
+const subnavStyle = { display: 'flex', gap: '8px', marginBottom: '25px', overflowX:
