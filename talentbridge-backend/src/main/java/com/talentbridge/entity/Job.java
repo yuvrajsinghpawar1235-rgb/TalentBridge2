@@ -24,6 +24,9 @@ public class Job {
     private String salaryRange;
 
     private String companyName;
+
+    // Plain mapping for companyId allowing optional nulls when bypassing Aiven MySQL FK constraints
+    @Column(name = "company_id", nullable = true)
     private Long companyId;
 
     @Column(length = 1000)
@@ -40,7 +43,7 @@ public class Job {
     private LocalDateTime deadline;  // Application deadline
     private String employmentType;
 
-    // Default Constructor
+    // Default Constructor (Required by JPA)
     public Job() {}
 
     // Full Constructor
@@ -69,57 +72,129 @@ public class Job {
     }
 
     // Getters and Setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public Long getId() {
+        return id;
+    }
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-    public String getTitle() { return title; }
-    public void setTitle(String title) { this.title = title; }
+    public String getTitle() {
+        return title;
+    }
+    public void setTitle(String title) {
+        this.title = title;
+    }
 
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
+    public String getDescription() {
+        return description;
+    }
+    public void setDescription(String description) {
+        this.description = description;
+    }
 
-    public String getLocation() { return location; }
-    public void setLocation(String location) { this.location = location; }
+    public String getLocation() {
+        return location;
+    }
+    public void setLocation(String location) {
+        this.location = location;
+    }
 
-    public String getType() { return type; }
-    public void setType(String type) { this.type = type; }
+    public String getType() {
+        return type;
+    }
+    public void setType(String type) {
+        this.type = type;
+    }
 
-    public String getWorkplaceType() { return workplaceType; }
-    public void setWorkplaceType(String workplaceType) { this.workplaceType = workplaceType; }
+    public String getWorkplaceType() {
+        return workplaceType;
+    }
+    public void setWorkplaceType(String workplaceType) {
+        this.workplaceType = workplaceType;
+    }
 
-    public String getExperienceLevel() { return experienceLevel; }
-    public void setExperienceLevel(String experienceLevel) { this.experienceLevel = experienceLevel; }
+    public String getExperienceLevel() {
+        return experienceLevel;
+    }
+    public void setExperienceLevel(String experienceLevel) {
+        this.experienceLevel = experienceLevel;
+    }
 
-    public Double getSalaryMin() { return salaryMin; }
-    public void setSalaryMin(Double salaryMin) { this.salaryMin = salaryMin; }
+    public Double getSalaryMin() {
+        return salaryMin;
+    }
+    public void setSalaryMin(Double salaryMin) {
+        this.salaryMin = salaryMin;
+    }
 
-    public String getSalaryRange() { return salaryRange; }
-    public void setSalaryRange(String salaryRange) { this.salaryRange = salaryRange; }
+    public String getSalaryRange() {
+        return salaryRange;
+    }
+    public void setSalaryRange(String salaryRange) {
+        this.salaryRange = salaryRange;
+    }
 
-    public String getCompanyName() { return companyName; }
-    public void setCompanyName(String companyName) { this.companyName = companyName; }
+    public String getCompanyName() {
+        return companyName;
+    }
+    public void setCompanyName(String companyName) {
+        this.companyName = companyName;
+    }
 
-    public Long getCompanyId() { return companyId; }
-    public void setCompanyId(Long companyId) { this.companyId = companyId; }
+    public Long getCompanyId() {
+        return companyId;
+    }
+    public void setCompanyId(Long companyId) {
+        this.companyId = companyId;
+    }
 
-    public String getCompanyDescription() { return companyDescription; }
-    public void setCompanyDescription(String companyDescription) { this.companyDescription = companyDescription; }
+    public String getCompanyDescription() {
+        return companyDescription;
+    }
+    public void setCompanyDescription(String companyDescription) {
+        this.companyDescription = companyDescription;
+    }
 
-    public String getRequirements() { return requirements; }
-    public void setRequirements(String requirements) { this.requirements = requirements; }
+    public String getRequirements() {
+        return requirements;
+    }
+    public void setRequirements(String requirements) {
+        this.requirements = requirements;
+    }
 
-    public String getSkills() { return skills; }
-    public void setSkills(String skills) { this.skills = skills; }
+    public String getSkills() {
+        return skills;
+    }
+    public void setSkills(String skills) {
+        this.skills = skills;
+    }
 
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
+    public String getStatus() {
+        return status;
+    }
+    public void setStatus(String status) {
+        this.status = status;
+    }
 
-    public String getPostedDate() { return postedDate; }
-    public void setPostedDate(String postedDate) { this.postedDate = postedDate; }
+    public String getPostedDate() {
+        return postedDate;
+    }
+    public void setPostedDate(String postedDate) {
+        this.postedDate = postedDate;
+    }
 
-    public LocalDateTime getDeadline() { return deadline; }
-    public void setDeadline(LocalDateTime deadline) { this.deadline = deadline; }
+    public LocalDateTime getDeadline() {
+        return deadline;
+    }
+    public void setDeadline(LocalDateTime deadline) {
+        this.deadline = deadline;
+    }
 
-    public String getEmploymentType() { return employmentType; }
-    public void setEmploymentType(String employmentType) { this.employmentType = employmentType; }
+    public String getEmploymentType() {
+        return employmentType;
+    }
+    public void setEmploymentType(String employmentType) {
+        this.employmentType = employmentType;
+    }
 }
