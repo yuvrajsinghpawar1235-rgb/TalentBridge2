@@ -1,29 +1,41 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import App from './App.jsx';
+import JobSearchControls from './components/JobSearchControls.jsx';
+import CompaniesView from './components/CompaniesView.jsx';
 import CandidateDashboard from './components/CandidateDashboard.jsx';
 import RecruiterDashboard from './components/RecruiterDashboard.jsx';
 import AdminDashboard from './components/AdminDashboard.jsx';
-import CompaniesView from './components/CompaniesView.jsx';
-import JobSearchControls from './components/JobSearchControls.jsx';
 import NotFound from './components/NotFound.jsx';
-import ProtectedRoute from './components/ProtectedRoute.jsx';
 import { ToastProvider } from './context/ToastContext.jsx';
 import './index.css';
 
-ReactDOM.createRoot(getElementById('root')).render(
+// Protected Route Guard Component
+function ProtectedRoute({ children, role }) {
+  const storedUser = localStorage.getItem('user');
+  const user = storedUser ? JSON.parse(storedUser) : null;
+
+  if (!user) return <Navigate to="/" replace />;
+  if (role && user.role !== role) return <Navigate to="/" replace />;
+
+  return children;
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <ToastProvider>
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<App />}>
+            <Route index element={<JobSearchControls />} />
             <Route path="jobs" element={<JobSearchControls />} />
             <Route path="companies" element={<CompaniesView />} />
+
             <Route
               path="candidate/*"
               element={
-                <ProtectedRoute allowedRole="CANDIDATE">
+                <ProtectedRoute role="CANDIDATE">
                   <CandidateDashboard />
                 </ProtectedRoute>
               }
@@ -31,7 +43,7 @@ ReactDOM.createRoot(getElementById('root')).render(
             <Route
               path="recruiter/*"
               element={
-                <ProtectedRoute allowedRole="RECRUITER">
+                <ProtectedRoute role="RECRUITER">
                   <RecruiterDashboard />
                 </ProtectedRoute>
               }
@@ -39,7 +51,7 @@ ReactDOM.createRoot(getElementById('root')).render(
             <Route
               path="admin/*"
               element={
-                <ProtectedRoute allowedRole="ADMIN">
+                <ProtectedRoute role="ADMIN">
                   <AdminDashboard />
                 </ProtectedRoute>
               }

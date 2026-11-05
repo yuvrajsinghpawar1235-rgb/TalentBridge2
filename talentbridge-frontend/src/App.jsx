@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import './App.css';
 import LoginModal from './components/LoginModal';
 import PostJobModal from './components/PostJobModal';
@@ -16,6 +17,9 @@ import { useToast } from './context/ToastContext';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://talentbridge2-5.onrender.com";
 
 export default function App() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
   const [user, setUser] = useState(null);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
@@ -26,7 +30,6 @@ export default function App() {
 
   // Filter & Search State
   const [selectedCompanyFilter, setSelectedCompanyFilter] = useState(null);
-  const [activeTab, setActiveTab] = useState('landing');
   const [searchTerm, setSearchTerm] = useState('');
 
   // Data Loading States (Pure Database State)
@@ -104,10 +107,15 @@ export default function App() {
       });
   };
 
-  // Fetch candidate applications to build dynamic notifications
+  // Fetch candidate applications to build dynamic notifications using JWT
   useEffect(() => {
     if (user && user.id && user.role === 'CANDIDATE') {
-      fetch(`${API_BASE_URL}/api/applications/candidate/${user.id}`)
+      const token = localStorage.getItem('jwtToken');
+      fetch(`${API_BASE_URL}/api/applications/candidate/${user.id}`, {
+        headers: {
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        }
+      })
         .then((res) => res.json())
         .then((data) => {
           if (Array.isArray(data) && data.length > 0) {
@@ -154,8 +162,9 @@ export default function App() {
       confirmColor: '#ef4444',
       onConfirm: () => {
         localStorage.removeItem('user');
+        localStorage.removeItem('jwtToken');
         setUser(null);
-        setActiveTab('landing');
+        navigate('/');
         addToast('Signed out successfully', 'info');
       }
     });
@@ -164,7 +173,7 @@ export default function App() {
   const handleSelectCompanyJobs = (companyName) => {
     setSelectedCompanyFilter(companyName);
     setSearchTerm('');
-    setActiveTab('jobs');
+    navigate('/jobs');
   };
 
   const handleToggleSaveJob = (jobToSave) => {
@@ -202,52 +211,54 @@ export default function App() {
     return title.includes(term) || location.includes(term) || jobCompany.includes(term);
   });
 
+  const currentPath = location.pathname;
+
   return (
     <div className="container" style={{ paddingBottom: '60px' }}>
-      {/* Header Bar - Uses space-between across 2 child divs */}
+      {/* Header Bar */}
       <header style={headerStyle}>
-        {/* Child 1: Left Container (Logo + Nav Links) */}
+        {/* Left Container (Logo + Nav Links) */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
           <h1
-            onClick={() => { setActiveTab('landing'); setSelectedCompanyFilter(null); }}
+            onClick={() => { setSelectedCompanyFilter(null); navigate('/'); }}
             style={{ color: 'var(--text-primary)', margin: 0, fontSize: '22px', fontWeight: '800', cursor: 'pointer' }}
           >
             Talent<span style={{ color: 'var(--primary-accent)' }}>Bridge</span>
           </h1>
 
           <nav style={{ display: 'flex', gap: '15px' }}>
-            <span onClick={() => setActiveTab('landing')} style={{ ...navLinkStyle, color: activeTab === 'landing' ? 'var(--primary-accent)' : 'var(--text-secondary)' }}>
+            <span onClick={() => { setSelectedCompanyFilter(null); navigate('/'); }} style={{ ...navLinkStyle, color: currentPath === '/' ? 'var(--primary-accent)' : 'var(--text-secondary)' }}>
               Overview
             </span>
-            <span onClick={() => setActiveTab('jobs')} style={{ ...navLinkStyle, color: activeTab === 'jobs' ? 'var(--primary-accent)' : 'var(--text-secondary)' }}>
+            <span onClick={() => navigate('/jobs')} style={{ ...navLinkStyle, color: currentPath.includes('/jobs') ? 'var(--primary-accent)' : 'var(--text-secondary)' }}>
               Jobs ({activeJobs.length})
             </span>
-            <span onClick={() => setActiveTab('companies')} style={{ ...navLinkStyle, color: activeTab === 'companies' ? 'var(--primary-accent)' : 'var(--text-secondary)' }}>
+            <span onClick={() => navigate('/companies')} style={{ ...navLinkStyle, color: currentPath.includes('/companies') ? 'var(--primary-accent)' : 'var(--text-secondary)' }}>
               Companies
             </span>
-            <span onClick={() => setActiveTab('about')} style={{ ...navLinkStyle, color: activeTab === 'about' ? 'var(--primary-accent)' : 'var(--text-secondary)' }}>
+            <span onClick={() => navigate('/about')} style={{ ...navLinkStyle, color: currentPath.includes('/about') ? 'var(--primary-accent)' : 'var(--text-secondary)' }}>
               About / Help
             </span>
 
             {user?.role === 'CANDIDATE' && (
-              <span onClick={() => setActiveTab('candidate')} style={{ ...navLinkStyle, color: activeTab === 'candidate' ? 'var(--primary-accent)' : 'var(--text-secondary)' }}>
+              <span onClick={() => navigate('/candidate')} style={{ ...navLinkStyle, color: currentPath.includes('/candidate') ? 'var(--primary-accent)' : 'var(--text-secondary)' }}>
                 👤 Candidate Dashboard
               </span>
             )}
             {user?.role === 'RECRUITER' && (
-              <span onClick={() => setActiveTab('recruiter')} style={{ ...navLinkStyle, color: activeTab === 'recruiter' ? 'var(--accent-green)' : 'var(--text-secondary)' }}>
+              <span onClick={() => navigate('/recruiter')} style={{ ...navLinkStyle, color: currentPath.includes('/recruiter') ? 'var(--accent-green)' : 'var(--text-secondary)' }}>
                 💼 Recruiter Pipeline
               </span>
             )}
             {user?.role === 'ADMIN' && (
-              <span onClick={() => setActiveTab('admin')} style={{ ...navLinkStyle, color: activeTab === 'admin' ? 'var(--accent-purple)' : 'var(--text-secondary)' }}>
+              <span onClick={() => navigate('/admin')} style={{ ...navLinkStyle, color: currentPath.includes('/admin') ? 'var(--accent-purple)' : 'var(--text-secondary)' }}>
                 🛡️ Master Admin Portal
               </span>
             )}
           </nav>
         </div>
 
-        {/* Child 2: Right Container (Dark Mode + Actions) */}
+        {/* Right Container (Dark Mode + Actions) */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <button onClick={toggleTheme} className="btn-secondary" style={{ borderRadius: '20px', padding: '6px 14px' }}>
             {theme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode'}
@@ -264,7 +275,7 @@ export default function App() {
               user={user}
               notifications={userNotifications}
               onLogout={handleLogout}
-              onNavigate={(tab) => setActiveTab(tab)}
+              onNavigate={(tab) => navigate(`/${tab}`)}
             />
           ) : (
             <button onClick={() => openAuthForRole('CANDIDATE', true)} className="btn-primary">Sign In / Register</button>
@@ -272,8 +283,8 @@ export default function App() {
         </div>
       </header>
 
-      {/* OVERVIEW TAB */}
-      {activeTab === 'landing' && (
+      {/* LANDING / OVERVIEW VIEW */}
+      {currentPath === '/' && (
         <>
           <section style={heroSectionStyle}>
             <div style={pillBadgeStyle}>✦ Next-Gen Talent Platform</div>
@@ -330,18 +341,18 @@ export default function App() {
         </>
       )}
 
-      {/* COMPANIES TAB */}
-      {activeTab === 'companies' && (
+      {/* COMPANIES VIEW ROUTE */}
+      {currentPath.includes('/companies') && (
         <CompaniesView jobs={activeJobs} onSelectCompany={handleSelectCompanyJobs} />
       )}
 
-      {/* CANDIDATE DASHBOARD TAB */}
-      {activeTab === 'candidate' && user?.role === 'CANDIDATE' && (
+      {/* CANDIDATE DASHBOARD ROUTE */}
+      {currentPath.includes('/candidate') && user?.role === 'CANDIDATE' && (
         <CandidateDashboard jobs={activeJobs} user={user} savedJobs={savedJobs} onToggleSaveJob={handleToggleSaveJob} />
       )}
 
-      {/* RECRUITER WORKSPACE TAB */}
-      {activeTab === 'recruiter' && user?.role === 'RECRUITER' && (
+      {/* RECRUITER WORKSPACE ROUTE */}
+      {currentPath.includes('/recruiter') && user?.role === 'RECRUITER' && (
         <RecruiterDashboard
           jobs={activeJobs}
           user={user}
@@ -354,13 +365,13 @@ export default function App() {
         />
       )}
 
-      {/* SINGLE ADMIN PORTAL */}
-      {activeTab === 'admin' && user?.role === 'ADMIN' && (
+      {/* ADMIN PORTAL ROUTE */}
+      {currentPath.includes('/admin') && user?.role === 'ADMIN' && (
         <AdminDashboard jobs={activeJobs} />
       )}
 
-      {/* ABOUT PAGE */}
-      {activeTab === 'about' && (
+      {/* ABOUT / HELP ROUTE */}
+      {currentPath.includes('/about') && (
         <main style={{ marginTop: '30px' }}>
           <h2>About TalentBridge & Help Center</h2>
           <div className="card" style={{ marginTop: '20px' }}>
@@ -372,8 +383,8 @@ export default function App() {
         </main>
       )}
 
-      {/* JOBS TAB */}
-      {activeTab === 'jobs' && (
+      {/* JOBS TAB ROUTE */}
+      {currentPath.includes('/jobs') && (
         <main style={{ marginTop: '30px' }}>
           {selectedCompanyFilter && (
             <div className="card" style={{ padding: '12px 20px', marginBottom: '20px', backgroundColor: 'var(--badge-bg)', border: '1px solid var(--primary-accent)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -450,23 +461,21 @@ export default function App() {
         </main>
       )}
 
-      {/* Catch-All 404 Page */}
-      {!['landing', 'jobs', 'companies', 'about', 'candidate', 'recruiter', 'admin'].includes(activeTab) && (
-        <NotFound onGoHome={() => setActiveTab('landing')} />
-      )}
-
       {/* Modals & Dialogs */}
       <LoginModal
         isOpen={isAuthOpen}
         initialRole={authRole}
         isGenericHeader={isGenericHeader}
         onClose={() => setIsAuthOpen(false)}
-        onLoginSuccess={(loggedInUser) => {
+        onLoginSuccess={(loggedInUser, token) => {
           setUser(loggedInUser);
+          if (token) {
+            localStorage.setItem('jwtToken', token);
+          }
           addToast(`Welcome back, ${loggedInUser.name}!`, 'success');
-          if (loggedInUser.role === 'CANDIDATE') setActiveTab('candidate');
-          if (loggedInUser.role === 'RECRUITER') setActiveTab('recruiter');
-          if (loggedInUser.role === 'ADMIN') setActiveTab('admin');
+          if (loggedInUser.role === 'CANDIDATE') navigate('/candidate');
+          if (loggedInUser.role === 'RECRUITER') navigate('/recruiter');
+          if (loggedInUser.role === 'ADMIN') navigate('/admin');
         }}
       />
 
@@ -495,9 +504,13 @@ export default function App() {
           }
 
           try {
+            const token = localStorage.getItem('jwtToken');
             const response = await fetch(`${API_BASE_URL}/api/applications`, {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: {
+                'Content-Type': 'application/json',
+                ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+              },
               body: JSON.stringify({
                 candidateId: user.id,
                 jobId: jobToApply.id,
