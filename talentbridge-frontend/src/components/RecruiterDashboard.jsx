@@ -6,15 +6,52 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://talentbridge2
 
 export default function RecruiterDashboard({ jobs = [], user, onOpenPostJob, onUpdateRecruiterCompany }) {
   const [applications, setApplications] = useState([]);
+  const [recruiterCompanies, setRecruiterCompanies] = useState([]);
+  const [recruiterJobs, setRecruiterJobs] = useState([]);
+  const [selectedCompanyId, setSelectedCompanyId] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [activeStageFilter, setActiveStageFilter] = useState('ALL');
-  const [isEditingCompany, setIsEditingCompany] = useState(false);
   const [isRegisterCompanyOpen, setIsRegisterCompanyOpen] = useState(false);
-  const [companyNameInput, setCompanyNameInput] = useState(user?.companyName || user?.company || 'Partner Company');
   const { addToast } = useToast();
 
-  const recruiterCompany = user?.companyName || user?.company || companyNameInput;
+  // 1. Fetch Recruiter's Companies from MySQL on Mount / User Change
+  useEffect(() => {
+    if (user && user.id) {
+      fetch(`${API_BASE_URL}/api/companies/recruiter/${user.id}`)
+        .then((res) => {
+          if (!res.ok) throw new Error('Failed to fetch recruiter companies');
+          return res.json();
+        })
+        .then((data) => {
+          if (Array.isArray(data)) {
+            setRecruiterCompanies(data);
+            if (data.length > 0 && !selectedCompanyId) {
+              setSelectedCompanyId(data[0].id);
+            }
+          }
+        })
+        .catch((err) => console.error('Error fetching companies from MySQL:', err));
+    }
+  }, [user]);
 
+  // 2. Fetch Recruiter's Jobs from MySQL
+  useEffect(() => {
+    if (user && user.id) {
+      fetch(`${API_BASE_URL}/api/jobs/recruiter/${user.id}`)
+        .then((res) => {
+          if (!res.ok) throw new Error('Failed to fetch recruiter jobs');
+          return res.json();
+        })
+        .then((data) => {
+          if (Array.isArray(data)) {
+            setRecruiterJobs(data);
+          }
+        })
+        .catch((err) => console.error('Error fetching jobs from MySQL:', err));
+    }
+  }, [user]);
+
+  // 3. Fetch Applications and Filter by Recruiter's Active Company
   useEffect(() => {
     setIsLoading(true);
     fetch(`${API_BASE_URL}/api/applications`)
@@ -24,9 +61,11 @@ export default function RecruiterDashboard({ jobs = [], user, onOpenPostJob, onU
       })
       .then((data) => {
         if (Array.isArray(data)) {
-          // Filter candidate applications matching this recruiter's company from MySQL
+          const activeCompany = recruiterCompanies.find(c => c.id === Number(selectedCompanyId));
+          const companyName = activeCompany ? activeCompany.name : (user?.companyName || user?.company || '');
+
           const companyApps = data.filter(
-            (app) => (app.companyName || app.company || '').toLowerCase() === recruiterCompany.toLowerCase()
+            (app) => (app.companyName || app.company || '').toLowerCase() === companyName.toLowerCase()
           );
           setApplications(companyApps);
         } else {
@@ -39,32 +78,26 @@ export default function RecruiterDashboard({ jobs = [], user, onOpenPostJob, onU
         setApplications([]);
         setIsLoading(false);
       });
-  }, [recruiterCompany]);
+  }, [selectedCompanyId, recruiterCompanies, user]);
 
-  // Filter jobs strictly matching this recruiter's company
-  const myCompanyJobs = jobs.filter(
-    (job) => (job.companyName || job.company || '').toLowerCase() === recruiterCompany.toLowerCase()
+  const activeCompanyObj = recruiterCompanies.find(c => c.id === Number(selectedCompanyId));
+  const currentCompanyName = activeCompanyObj ? activeCompanyObj.name : (user?.companyName || 'Partner Company');
+
+  // Filter jobs matching the selected company ID or company name
+  const myCompanyJobs = recruiterJobs.filter(
+    (job) => job.companyId === Number(selectedCompanyId) || (job.companyName || '').toLowerCase() === currentCompanyName.toLowerCase()
   );
 
-  const handleSaveCompanyName = (e) => {
-    e.preventDefault();
-    if (!companyNameInput.trim()) return;
-    if (onUpdateRecruiterCompany) {
-      onUpdateRecruiterCompany(companyNameInput.trim());
-    }
-    setIsEditingCompany(false);
-    if (addToast) addToast(`Company name updated to "${companyNameInput.trim()}"`, 'success');
-  };
-
   const handleCompanyRegistered = (newCompany) => {
+    setRecruiterCompanies(prev => [...prev, newCompany]);
+    setSelectedCompanyId(newCompany.id);
     if (onUpdateRecruiterCompany) {
       onUpdateRecruiterCompany(newCompany.name);
     }
-    setCompanyNameInput(newCompany.name);
+    if (addToast) addToast(`Successfully registered and switched to "${newCompany.name}"!`, 'success');
   };
 
   const handleStageChange = async (appId, newStage) => {
-    // Optimistic UI update
     setApplications((prev) =>
       prev.map((app) => (app.id === appId ? { ...app, stage: newStage } : app))
     );
@@ -97,29 +130,24 @@ export default function RecruiterDashboard({ jobs = [], user, onOpenPostJob, onU
         <div>
           <span style={roleBadgeStyle}>💼 Recruiter Workspace</span>
 
-          {isEditingCompany ? (
-            <form onSubmit={handleSaveCompanyName} style={{ display: 'flex', gap: '8px', margin: '8px 0' }}>
-              <input
-                type="text"
-                value={companyNameInput}
-                onChange={(e) => setCompanyNameInput(e.target.value)}
-                style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--border-color)', fontSize: '16px', outline: 'none' }}
-                autoFocus
-              />
-              <button type="submit" className="btn-primary" style={{ padding: '4px 12px', fontSize: '12px' }}>Save</button>
-              <button type="button" className="btn-secondary" onClick={() => setIsEditingCompany(false)} style={{ padding: '4px 12px', fontSize: '12px' }}>Cancel</button>
-            </form>
-          ) : (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '8px 0 4px 0' }}>
-              <h2 style={{ margin: 0, fontSize: '24px', color: 'var(--text-primary)' }}>{recruiterCompany}</h2>
-              <button onClick={() => setIsEditingCompany(true)} className="btn-secondary" style={{ padding: '2px 8px', fontSize: '11px' }}>
-                ✏️ Edit Name
-              </button>
-            </div>
-          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: '10px 0 6px 0', flexWrap: 'wrap' }}>
+            <h2 style={{ margin: 0, fontSize: '24px', color: 'var(--text-primary)' }}>{currentCompanyName}</h2>
+
+            {recruiterCompanies.length > 1 && (
+              <select
+                value={selectedCompanyId}
+                onChange={(e) => setSelectedCompanyId(e.target.value)}
+                style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)', fontSize: '13px', fontWeight: 'bold', outline: 'none' }}
+              >
+                {recruiterCompanies.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            )}
+          </div>
 
           <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '14px' }}>
-            Manage job openings and applicant pipelines for {recruiterCompany}.
+            Manage multi-company job openings and candidate pipelines in Aiven MySQL.
           </p>
         </div>
 
@@ -166,7 +194,7 @@ export default function RecruiterDashboard({ jobs = [], user, onOpenPostJob, onU
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
           <h3 style={{ margin: 0 }}>Candidate Pipeline ({filteredApplications.length})</h3>
 
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             {['ALL', 'APPLIED', 'SCREENING', 'INTERVIEW', 'OFFER', 'REJECTED'].map((stage) => (
               <button
                 key={stage}
@@ -189,11 +217,11 @@ export default function RecruiterDashboard({ jobs = [], user, onOpenPostJob, onU
         </div>
 
         {isLoading ? (
-          <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '20px' }}>Loading applicant pipeline...</p>
+          <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '20px' }}>Loading applicant pipeline from MySQL...</p>
         ) : filteredApplications.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>
-            <p style={{ margin: 0, fontSize: '15px' }}>No candidate applications in the database yet.</p>
-            <p style={{ fontSize: '13px', marginTop: '6px' }}>When job seekers apply to listings posted by {recruiterCompany}, their live applications will populate here.</p>
+            <p style={{ margin: 0, fontSize: '15px' }}>No candidate applications found for {currentCompanyName}.</p>
+            <p style={{ fontSize: '13px', marginTop: '6px' }}>When candidates apply to your listings, their database records will appear here.</p>
           </div>
         ) : (
           <div style={{ display: 'grid', gap: '12px' }}>
@@ -234,6 +262,7 @@ export default function RecruiterDashboard({ jobs = [], user, onOpenPostJob, onU
         isOpen={isRegisterCompanyOpen}
         onClose={() => setIsRegisterCompanyOpen(false)}
         onCompanyRegistered={handleCompanyRegistered}
+        recruiterId={user?.id}
       />
     </div>
   );

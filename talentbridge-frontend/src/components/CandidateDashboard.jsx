@@ -541,7 +541,7 @@ export default function CandidateDashboard({ jobs, user, savedJobs, onToggleSave
         <div>
           <h3 style={{ marginBottom: '16px' }}>Application & Recruiter Updates</h3>
           <div style={{ display: 'grid', gap: '10px' }}>
-            {notifications.map((n) => (
+            {notifications.link ? null : notifications.map((n) => (
               <div key={n.id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: n.read ? 'var(--bg-card)' : 'var(--badge-bg)' }}>
                 <div>
                   <strong style={{ fontSize: '15px', color: 'var(--text-primary)' }}>{n.title}</strong>
@@ -558,4 +558,29 @@ export default function CandidateDashboard({ jobs, user, savedJobs, onToggleSave
 }
 
 // Helpers & Styles
-const subnavStyle = { display: 'flex', gap: '8px', marginBottom: '25px', overflowX:
+const subnavStyle = { display: 'flex', gap: '8px', marginBottom: '25px', overflowX: 'auto', paddingBottom: '6px' };
+const subnavTabStyle = (isActive) => ({ padding: '8px 16px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: isActive ? 'var(--primary-accent)' : 'var(--bg-card)', color: isActive ? '#fff' : 'var(--text-primary)', fontSize: '13px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' });
+const welcomeBannerStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--bg-secondary)', padding: '24px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '20px' };
+const metricsGridStyle = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginBottom: '25px' };
+const statCardStyle = { padding: '16px' };
+const statLabelStyle = { fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '600' };
+const statValueStyle = { fontSize: '24px', fontWeight: '800', margin: '6px 0 0 0', color: 'var(--text-primary)' };
+const inputGroupStyle = { marginBottom: '12px', display: 'flex', flexDirection: 'column' };
+const labelStyle = { fontSize: '12px', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '4px' };
+const inputStyle = { padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)', fontSize: '14px', outline: 'none' };
+const skillBadgeStyle = { backgroundColor: 'var(--badge-bg)', color: 'var(--primary-accent)', fontSize: '12px', fontWeight: 'bold', padding: '6px 12px', borderRadius: '12px', display: 'inline-flex', alignItems: 'center' };
+const resumeBoxStyle = { display: 'flex', alignItems: 'center', gap: '14px', padding: '16px', backgroundColor: 'var(--bg-secondary)', borderRadius: '10px', border: '1px solid var(--border-color)' };
+const stageBadgeStyle = (stage) => ({
+  backgroundColor: stage === 'ACCEPTED' ? 'rgba(16, 185, 129, 0.15)' : stage === 'OFFER' ? 'rgba(16, 185, 129, 0.15)' : stage === 'INTERVIEW' ? 'rgba(245, 158, 11, 0.15)' : 'var(--badge-bg)',
+  color: stage === 'ACCEPTED' ? 'var(--accent-green)' : stage === 'OFFER' ? 'var(--accent-green)' : stage === 'INTERVIEW' ? '#f59e0b' : 'var(--primary-accent)',
+  fontSize: '11px',
+  fontWeight: 'bold',
+  padding: '4px 10px',
+  borderRadius: '12px'
+});
+const overlayStyle = { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.65)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 };
+const modalStyle = { backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', padding: '24px', borderRadius: '14px', width: '420px', color: 'var(--text-primary)' };
+const sectionHeaderStyle = { fontSize: '14px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '8px' };
+const closeXStyle = { background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: '18px', cursor: 'pointer' };
+const avatarCircleStyle = { width: '48px', height: '48px', borderRadius: '50%', backgroundColor: 'var(--primary-accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: 'bold' };
+const subCardStyle = { backgroundColor: 'var(--bg-secondary)', padding: '14px', borderRadius: '10px', border: '1px solid var(--border-color)' };
