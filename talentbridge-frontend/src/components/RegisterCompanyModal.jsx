@@ -3,7 +3,7 @@ import { useToast } from '../context/ToastContext';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://talentbridge2-5.onrender.com';
 
-export default function RegisterCompanyModal({ isOpen, onClose, onCompanyRegistered }) {
+export default function RegisterCompanyModal({ isOpen, onClose, onCompanyRegistered, recruiterId }) {
   const [companyName, setCompanyName] = useState('');
   const [industry, setIndustry] = useState('Software & Engineering');
   const [location, setLocation] = useState('');
@@ -31,6 +31,7 @@ export default function RegisterCompanyModal({ isOpen, onClose, onCompanyRegiste
       location: location.trim(),
       size,
       verified: true,
+      recruiterId: recruiterId ? Number(recruiterId) : null,
       description: description.trim() || 'Verified recruiting partner active on TalentBridge.',
       perks: ['Growth Stage', 'Innovative Culture', 'Competitive Benefits']
     };
