@@ -15,16 +15,14 @@ import java.util.List;
         origins = {
                 "http://localhost:5173",
                 "http://localhost:3000",
-                "https://talentbridge2-git-main-yuvraj-419a.vercel.app"
+                "https://talentbridge2-git-main-yuvraj-419a.vercel.app",
+                "https://talentbridge2-seven.vercel.app",
+                "https://talentbridge-olive.vercel.app",
+                "https://talentbriddge2.netlify.app"
         },
         allowedHeaders = "*",
-        methods = {
-                RequestMethod.GET,
-                RequestMethod.POST,
-                RequestMethod.PUT,
-                RequestMethod.DELETE,
-                RequestMethod.OPTIONS
-        }
+        methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.OPTIONS},
+        allowCredentials = "true"
 )
 public class CompanyController {
 
@@ -35,6 +33,16 @@ public class CompanyController {
     public ResponseEntity<List<Company>> getAllCompanies() {
         try {
             List<Company> companies = companyRepository.findAll();
+            return new ResponseEntity<>(companies, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/recruiter/{recruiterId}")
+    public ResponseEntity<List<Company>> getCompaniesByRecruiter(@PathVariable Long recruiterId) {
+        try {
+            List<Company> companies = companyRepository.findByRecruiterId(recruiterId);
             return new ResponseEntity<>(companies, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);

@@ -34,7 +34,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/jobs/**", "/api/companies/**").permitAll()
-                        .requestMatchers("/api/admin/**").authenticated() // Enforces valid JWT check for admin endpoints
+                        .requestMatchers("/api/admin/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
@@ -48,7 +48,10 @@ public class SecurityConfig {
         configuration.setAllowedOrigins(List.of(
                 "http://localhost:5173",
                 "http://localhost:3000",
-                "https://talentbridge2-git-main-yuvraj-419a.vercel.app"
+                "https://talentbridge2-git-main-yuvraj-419a.vercel.app",
+                "https://talentbridge2-seven.vercel.app",
+                "https://talentbridge-olive.vercel.app",
+                "https://talentbriddge2.netlify.app"
         ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));

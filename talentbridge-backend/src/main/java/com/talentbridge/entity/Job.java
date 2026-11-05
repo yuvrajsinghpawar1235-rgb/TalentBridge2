@@ -29,6 +29,10 @@ public class Job {
     @Column(name = "company_id", nullable = true)
     private Long companyId;
 
+    // Recruiter ID mapping to track which recruiter posted this job
+    @Column(name = "recruiter_id", nullable = true)
+    private Long recruiterId;
+
     @Column(length = 1000)
     private String companyDescription;
 
@@ -49,8 +53,8 @@ public class Job {
     // Full Constructor
     public Job(Long id, String title, String description, String location, String type, String workplaceType,
                String experienceLevel, Double salaryMin, String salaryRange, String companyName, Long companyId,
-               String companyDescription, String requirements, String skills, String status, String postedDate,
-               LocalDateTime deadline, String employmentType) {
+               Long recruiterId, String companyDescription, String requirements, String skills, String status,
+               String postedDate, LocalDateTime deadline, String employmentType) {
         this.id = id;
         this.title = title;
         this.description = description;
@@ -62,6 +66,7 @@ public class Job {
         this.salaryRange = salaryRange;
         this.companyName = companyName;
         this.companyId = companyId;
+        this.recruiterId = recruiterId;
         this.companyDescription = companyDescription;
         this.requirements = requirements;
         this.skills = skills;
@@ -147,6 +152,13 @@ public class Job {
     }
     public void setCompanyId(Long companyId) {
         this.companyId = companyId;
+    }
+
+    public Long getRecruiterId() {
+        return recruiterId;
+    }
+    public void setRecruiterId(Long recruiterId) {
+        this.recruiterId = recruiterId;
     }
 
     public String getCompanyDescription() {

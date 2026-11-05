@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 public interface JobRepository extends JpaRepository<Job, Long> {
 
@@ -21,4 +23,14 @@ public interface JobRepository extends JpaRepository<Job, Long> {
             @Param("type") String type,
             Pageable pageable
     );
+
+    /**
+     * Find all job listings posted by a specific recruiter ID across their companies.
+     */
+    List<Job> findByRecruiterId(Long recruiterId);
+
+    /**
+     * Find all job listings associated with a specific company ID.
+     */
+    List<Job> findByCompanyId(Long companyId);
 }

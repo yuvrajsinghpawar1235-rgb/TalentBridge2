@@ -18,25 +18,19 @@ import java.util.Optional;
                 "http://localhost:5173",
                 "http://localhost:3000",
                 "https://talentbridge2-git-main-yuvraj-419a.vercel.app",
-                "https://talentbriddge2.netlify.app",
+                "https://talentbridge2-seven.vercel.app",
                 "https://talentbridge-olive.vercel.app",
-                "https://talentbridge2-seven.vercel.app"
+                "https://talentbriddge2.netlify.app"
         },
         allowedHeaders = "*",
-        methods = {
-                RequestMethod.GET,
-                RequestMethod.POST,
-                RequestMethod.PUT,
-                RequestMethod.DELETE,
-                RequestMethod.OPTIONS
-        }
+        methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.OPTIONS},
+        allowCredentials = "true"
 )
 public class JobController {
 
     @Autowired
     private JobRepository jobRepository;
 
-    // 1. GET ALL JOBS
     @GetMapping
     public ResponseEntity<List<Job>> getAllJobs() {
         try {
@@ -47,7 +41,16 @@ public class JobController {
         }
     }
 
-    // 2. GET JOB BY ID
+    @GetMapping("/recruiter/{recruiterId}")
+    public ResponseEntity<List<Job>> getJobsByRecruiter(@PathVariable Long recruiterId) {
+        try {
+            List<Job> jobs = jobRepository.findByRecruiterId(recruiterId);
+            return new ResponseEntity<>(jobs, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<Job> getJobById(@PathVariable("id") Long id) {
         Optional<Job> jobData = jobRepository.findById(id);
@@ -58,7 +61,6 @@ public class JobController {
         }
     }
 
-    // 3. CREATE / POST NEW JOB
     @PostMapping
     public ResponseEntity<Job> createJob(@RequestBody Job job) {
         try {
@@ -76,7 +78,6 @@ public class JobController {
         }
     }
 
-    // 4. UPDATE EXISTING JOB
     @PutMapping("/{id}")
     public ResponseEntity<Job> updateJob(@PathVariable("id") Long id, @RequestBody Job job) {
         Optional<Job> jobData = jobRepository.findById(id);
@@ -92,6 +93,8 @@ public class JobController {
             if (job.getSalaryMin() != null) _job.setSalaryMin(job.getSalaryMin());
             if (job.getSalaryRange() != null) _job.setSalaryRange(job.getSalaryRange());
             if (job.getCompanyName() != null) _job.setCompanyName(job.getCompanyName());
+            if (job.getCompanyId() != null) _job.setCompanyId(job.getCompanyId());
+            if (job.getRecruiterId() != null) _job.setRecruiterId(job.getRecruiterId());
             if (job.getCompanyDescription() != null) _job.setCompanyDescription(job.getCompanyDescription());
             if (job.getRequirements() != null) _job.setRequirements(job.getRequirements());
             if (job.getSkills() != null) _job.setSkills(job.getSkills());
@@ -103,7 +106,6 @@ public class JobController {
         }
     }
 
-    // 5. DELETE JOB
     @DeleteMapping("/{id}")
     public ResponseEntity<HttpStatus> deleteJob(@PathVariable("id") Long id) {
         try {

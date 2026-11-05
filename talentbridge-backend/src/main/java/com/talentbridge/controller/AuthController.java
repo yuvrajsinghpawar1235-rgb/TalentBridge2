@@ -10,12 +10,19 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = {
-        "http://localhost:5173",
-        "http://localhost:3000",
-        "https://talentbriddge2.netlify.app",
-        "https://talentbridge-olive.vercel.app"
-})
+@CrossOrigin(
+        origins = {
+                "http://localhost:5173",
+                "http://localhost:3000",
+                "https://talentbridge2-git-main-yuvraj-419a.vercel.app",
+                "https://talentbridge2-seven.vercel.app",
+                "https://talentbridge-olive.vercel.app",
+                "https://talentbriddge2.netlify.app"
+        },
+        allowedHeaders = "*",
+        methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.OPTIONS},
+        allowCredentials = "true"
+)
 public class AuthController {
 
     @Autowired
@@ -25,7 +32,6 @@ public class AuthController {
     public ResponseEntity<?> register(@RequestBody User user) {
         try {
             User registeredUser = authService.register(user);
-            // Hide password before returning to client
             registeredUser.setPassword(null);
             return ResponseEntity.ok(registeredUser);
         } catch (Exception e) {
@@ -40,7 +46,6 @@ public class AuthController {
             String password = credentials.get("password");
 
             User user = authService.login(email, password);
-            // Hide password before returning to client
             user.setPassword(null);
             return ResponseEntity.ok(user);
         } catch (Exception e) {

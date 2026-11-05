@@ -23,11 +23,15 @@ public class Company {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    // Added to track which recruiter owns/launched this company
+    @Column(name = "recruiter_id")
+    private Long recruiterId;
+
     // Default Constructor
     public Company() {}
 
     // Full Constructor
-    public Company(Long id, String name, String industry, String location, String size, Boolean verified, String description) {
+    public Company(Long id, String name, String industry, String location, String size, Boolean verified, String description, Long recruiterId) {
         this.id = id;
         this.name = name;
         this.industry = industry;
@@ -35,6 +39,7 @@ public class Company {
         this.size = size;
         this.verified = verified;
         this.description = description;
+        this.recruiterId = recruiterId;
     }
 
     // Getters and Setters
@@ -58,4 +63,7 @@ public class Company {
 
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
+
+    public Long getRecruiterId() { return recruiterId; }
+    public void setRecruiterId(Long recruiterId) { this.recruiterId = recruiterId; }
 }
